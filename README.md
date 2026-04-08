@@ -89,10 +89,10 @@ vr-tutorial/
 | 1  | Hello Ursina        | Verify setup; create your first 3D scene with a cube     |
 | 2  | Build a Room        | Construct a room from primitives; position and scale      |
 | 3  | Make It Real        | Add colliders, textures, lighting, and a skybox           |
-| 4  | Pick Up the Star    | Raycasting, click interaction, and pygame gamepad input   |
+| 4  | Pick Up the Star    | Proximity detection, score UI, and pygame gamepad input   |
 | 5  | Mini Experiment     | Trial state machine, conditions, timing, and CSV logging  |
 
-Each exercise folder contains a `_template.py` (starting point) and a `_solution.py` (reference implementation).
+Each exercise folder contains a `template.py` (starting point) and a `solution.py` (reference implementation).
 
 ## Running Things
 
