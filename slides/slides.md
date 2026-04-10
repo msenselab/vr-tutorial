@@ -12,7 +12,7 @@ mdc: true
   <h1 class="text-4xl font-bold mb-2">From Screen to Scene</h1>
   <h2 class="text-2xl text-gray-600 mb-6">Building VR Experiments with Python</h2>
   <p class="text-lg text-gray-500 mb-4">A hands-on workshop for researchers</p>
-  <p class="text-lg"><strong>Chunyu Qu</strong> & <strong>Zhuanghua Shi</strong></p>
+  <p class="text-lg"><strong>Chunyu Qu, Artyom Zinchenko</strong> & <strong>Zhuanghua Shi</strong></p>
   <p class="text-base text-gray-500">LMU Munich &middot; April 2026</p>
   <p class="text-sm text-gray-400 mt-2">Erasmus+ KA210-VET &middot; <a href="https://xr4vet.eu">xr4vet.eu</a></p>
   <div class="flex items-center justify-center gap-8 mt-6">
