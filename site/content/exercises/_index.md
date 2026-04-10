@@ -4,7 +4,7 @@ description: "Hands-on coding exercises from screen to scene"
 weight: 2
 ---
 
-Five progressive exercises take you from a first 3D window to a complete experiment paradigm. Each builds on the previous one, so work through them in order.
+Six progressive exercises take you from a first 3D window to a complete experiment paradigm. Each builds on the previous one, so work through them in order.
 
 ## Exercise Overview
 
@@ -15,12 +15,14 @@ Five progressive exercises take you from a first 3D window to a complete experim
 | 3  | [Make It Real](/exercises/03-make-it-real/)        | Add colliders, textures, lighting, and a skybox                    | 20 min   |
 | 4  | [Pick Up the Star](/exercises/04-pick-up-star/)   | Proximity detection, HUD display, keyboard events, gamepad input   | 25 min   |
 | 5  | [Mini Experiment](/exercises/05-mini-experiment/) | State machine, trial sequencing, CSV logging, EEG triggers         | 35 min   |
+| 6  | [Load 3D Models](/exercises/06-load-models/)      | Import GLB models, animate, proximity highlight                    | 15 min   |
 
 ## Prerequisites
 
-- **Exercise 1**: Python 3.11+ and `pip install ursina pygame` completed (see [Setup Guide](/setup/))
+- **Exercise 1**: Python 3.11 and `uv pip install ursina pygame` completed (see [Setup Guide](/setup/))
 - **Exercises 2-4**: Understanding of Exercise 1 concepts
 - **Exercise 5**: Comfortable with Python classes and dictionaries
+- **Exercise 6**: Exercises 2-4 concepts; `.glb` model files are provided
 
 ## How to Use Templates and Solutions
 

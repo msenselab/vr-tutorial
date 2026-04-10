@@ -1405,36 +1405,43 @@ rightWidth: 50
 ---
 
 ::title::
-Exercise 6: Add a 3D Model (15 min)
+Exercise 6: Load 3D Models (15 min)
 
 ::left-title::
-Builder Track
+What You Do
 
 ::left::
 
-1. Open your room from Exercise 1/2
-2. Load `assets/table.glb` into the scene
-3. Adjust scale and position until it fits
-4. Add `collider='box'` so the player can't walk through
-5. Load a second model (`assets/lamp.glb`)
+1. Open `exercises/ex6_load_models/template.py`
+2. Load `Angel.glb` and `Swing.glb` using `load_glb()`
+3. Adjust scale, position, and rotation
+4. Animate the swing with `math.sin()`
+5. Add  highlighting (yellow when near)
+
+```python
+angel = Entity(
+    model=load_glb('Angel', path=MODELS_DIR),
+    scale=2, position=(-3, 0, 5),
+)
+```
 
 ::right-title::
-Runner Track
+macOS Note
 
 ::right::
 
-- Browse the provided models in `assets/`
-- Swap different models, compare scale/rotation
-- Bonus: visit meshy.ai, generate a model from a text prompt, download .glb, load it
+GLB models use PBR materials that need GLSL shaders macOS cannot compile. The `load_glb()` helper strips PBR shaders but keeps the base-color texture:
 
-<comBlock bgColor="bg-green-50" border="left" borderColor="border-green-400">
+```python
+np.setShaderOff(2)   # ignore auto-shader
+np.setLightOff(2)    # ignore scene lights
+# keep Base Color, strip Metal Rough + Normal
+```
 
-We provide 3-4 pre-downloaded .glb models in the starter package -- no account signup needed.
-
-</comBlock>
+Models render with original albedo textures. Room walls still receive lighting normally.
 
 <!--
-The starter package includes a few .glb models so you can get started immediately. If you have time and want to try AI generation, Meshy gives you 5 free models per day.
+The template includes a load_glb helper that handles the macOS shader issue. Participants just call it instead of load_model. The angel and swing models are in exercises/assets/models/.
 -->
 
 
@@ -1472,6 +1479,21 @@ This Workshop
 <!--
 All the code and slides are on GitHub. The exercises have both templates and solutions.
 -->
+---
+
+# Unity VR in Research
+
+- Unity is the industry standard for VR development
+- Steeper learning curve than Ursina/Panda3D
+- More complex build process for experiments
+- Better support for advanced graphics, physics, and VR features
+
+Artyom will cover Unity in the next session. 
+
+The basic tutorials we had already in Februrary. If you missed that, please check this tutorial website:
+
+- https://eri-st.eu/VR-Workshop/en/
+
 
 ---
 
@@ -1516,3 +1538,4 @@ The workshop gave you the architecture. Now fill it with your own research quest
 <!--
 Thank you for your time and attention. I'm happy to take questions now, and you can always reach me by email or open an issue on the GitHub repository.
 -->
+

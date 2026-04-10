@@ -96,6 +96,7 @@ vr-tutorial/
 | 3  | Make It Real        | Add colliders, textures, lighting, and a skybox           |
 | 4  | Pick Up the Star    | Proximity detection, score UI, and pygame gamepad input   |
 | 5  | Mini Experiment     | Trial state machine, conditions, timing, and CSV logging  |
+| 6  | Load 3D Models      | Import GLB models, animate, proximity highlight           |
 
 Each exercise folder contains a `template.py` (starting point) and a `solution.py` (reference implementation).
 
