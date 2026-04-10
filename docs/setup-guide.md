@@ -91,17 +91,9 @@ You should see a version number (e.g., `uv 0.7.x`).
 
 ## Step 3: Download the workshop materials
 
-### Option A — Git clone (if you have Git)
+We will provdee a ZIP file containing all the code and assets for the workshop exercises. 
 
-```bash
-git clone https://github.com/strongway/vr-tutorial.git
-```
-
-### Option B — Download ZIP
-
-1. Go to the repository page provided by the workshop organizers
-2. Click the green "Code" button, then "Download ZIP"
-3. Unzip the downloaded file to a location you can find easily (e.g., Desktop or Documents)
+Unzip the downloaded file to a location you can find easily (e.g., Desktop or Documents)
 
 ---
 
