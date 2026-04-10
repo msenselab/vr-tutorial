@@ -128,7 +128,7 @@ score = 0
 score_text = Text(
     text=f'Stars: {score}/{len(stars)}',
     position=(-0.85, 0.45),
-    scale=2,
+    scale=0.2,
     parent=camera.ui,
     color=color.white,
 )
@@ -137,7 +137,7 @@ score_text = Text(
 win_text = Text(
     text='Well done!',
     origin=(0, 0),
-    scale=4,
+    scale=0.2,
     color=color.green,
     parent=camera.ui,
     enabled=False,
@@ -146,6 +146,7 @@ win_text = Text(
 # --- Player ----------------------------------------------------------------
 player = FirstPersonController()
 player.gravity = 0
+player.cursor.visible = False
 player.position = (0, 1, 0)
 
 # --- Game logic ------------------------------------------------------------

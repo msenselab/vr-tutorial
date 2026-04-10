@@ -19,7 +19,7 @@ Please complete all steps **before** the workshop. The entire process takes abou
 
 ## Step 1: Install Python
 
-You need **Python 3.11 or newer**.
+You need **Python 3.11** (not 3.12 or newer — the 3D engine we use requires 3.11).
 
 ### macOS
 
@@ -32,7 +32,7 @@ You need **Python 3.11 or newer**.
 **Option B — Homebrew** (if you already use it)
 
 ```bash
-brew install python@3.12
+brew install python@3.11
 ```
 
 ### Windows
@@ -51,7 +51,7 @@ python3 --version        # macOS
 python --version         # Windows
 ```
 
-You should see `Python 3.11.x` or higher. If you see `Python 2.x` or "command not found", revisit the installation steps.
+You should see `Python 3.11.x`. If you see a different major version, `Python 2.x`, or "command not found", revisit the installation steps.
 
 ---
 

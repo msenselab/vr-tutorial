@@ -134,7 +134,7 @@ for pos in star_positions:
 #   score_text = Text(
 #       text=f'Stars: {score}/{len(stars)}',
 #       position=(-0.85, 0.45),
-#       scale=2,
+#       scale=1,
 #       parent=camera.ui,
 #       color=color.white,
 #   )
@@ -143,7 +143,7 @@ for pos in star_positions:
 #   win_text = Text(
 #       text='Well done!',
 #       origin=(0, 0),
-#       scale=4,
+#       scale=2,
 #       color=color.green,
 #       parent=camera.ui,
 #       enabled=False,
@@ -152,6 +152,7 @@ for pos in star_positions:
 # --- Player ----------------------------------------------------------------
 player = FirstPersonController()
 player.gravity = 0
+player.cursor.visible = False
 player.position = (0, 1, 0)
 
 # --- Game logic ------------------------------------------------------------

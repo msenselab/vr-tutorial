@@ -130,21 +130,22 @@ class Experiment(Entity):
         # Player (disabled until task phase)
         self.player = FirstPersonController(enabled=False)
         self.player.gravity = 0
+        self.player.cursor.visible = False
 
         # UI elements
         self.instruction_text = Text(
-            text='', origin=(0, 0), scale=2, parent=camera.ui,
+            text='', origin=(0, 0), scale=1, parent=camera.ui,
         )
         self.fixation_text = Text(
-            text='+', origin=(0, 0), scale=5, parent=camera.ui,
+            text='+', origin=(0, 0), scale=2, parent=camera.ui,
             enabled=False,
         )
         self.score_text = Text(
-            text='', position=(-0.85, 0.45), scale=1.5, parent=camera.ui,
+            text='', position=(-0.85, 0.45), scale=0.75, parent=camera.ui,
             enabled=False,
         )
         self.feedback_text = Text(
-            text='', origin=(0, 0), scale=2, parent=camera.ui,
+            text='', origin=(0, 0), scale=1, parent=camera.ui,
             enabled=False,
         )
 

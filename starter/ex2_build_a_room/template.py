@@ -116,7 +116,8 @@ EditorCamera()
 #        from ursina.prefabs.first_person_controller import FirstPersonController
 # 3. Uncomment and complete the lines below:
 # player = FirstPersonController()
-# player.gravity = 0          # no falling in a flat scene
-# player.position = (0, 1, 0) # start near centre
+# player.gravity = 0                # no falling in a flat scene
+# player.cursor.visible = False     # hide the pink crosshair
+# player.position = (0, 1, 0)       # start near centre
 
 app.run()

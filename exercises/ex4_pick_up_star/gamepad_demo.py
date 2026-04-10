@@ -36,6 +36,7 @@ Sky()
 # --- Player ----------------------------------------------------------------
 player = FirstPersonController()
 player.gravity = 0
+player.cursor.visible = False
 player.position = (0, 1, 0)
 
 # --- Initialize pygame joystick -------------------------------------------
@@ -53,7 +54,7 @@ else:
 status = Text(
     text='Gamepad: not connected',
     position=(-0.85, 0.45),
-    scale=1.5,
+    scale=0.75,
     parent=camera.ui,
 )
 

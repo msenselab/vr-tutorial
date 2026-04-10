@@ -34,9 +34,9 @@ Total: ~4 hours including breaks.
 
 Please complete these steps **before** the workshop.
 
-### 1. Install Python 3.11+ and uv
+### 1. Install Python 3.11 and uv
 
-Download Python from [python.org](https://www.python.org/downloads/) or use your system package manager. Then install [uv](https://docs.astral.sh/uv/getting-started/installation/) (a fast Python package manager):
+Download **Python 3.11** from [python.org](https://www.python.org/downloads/release/python-3119/) (not 3.12+ — panda3d requires 3.11). Then install [uv](https://docs.astral.sh/uv/getting-started/installation/) (a fast Python package manager):
 
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh   # macOS/Linux

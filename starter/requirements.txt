@@ -1,2 +1,3 @@
-ursina>=7.0.0
+ursina<8
+panda3d==1.10.13
 pygame

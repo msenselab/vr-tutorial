@@ -6,14 +6,14 @@ weight: 1
 
 Complete these steps **before** the workshop. The entire process takes about 10 minutes with a decent internet connection.
 
-## 1. Install Python 3.11+
+## 1. Install Python 3.11
 
 ### macOS
 
 Download the latest Python from [python.org](https://www.python.org/downloads/) or install via Homebrew:
 
 ```bash
-brew install python@3.12
+brew install python@3.11
 ```
 
 ### Windows
@@ -24,7 +24,7 @@ Download the installer from [python.org](https://www.python.org/downloads/). Dur
 
 ```bash
 sudo apt update
-sudo apt install python3.12 python3.12-venv python3-pip
+sudo apt install python3.11 python3.11-venv python3-pip
 ```
 
 ### Verify Python
@@ -37,7 +37,7 @@ python --version
 python3 --version
 ```
 
-You should see `Python 3.11.x` or higher.
+You should see `Python 3.11.x`.
 
 ## 2. Create a Virtual Environment
 

@@ -61,18 +61,23 @@ The good news: most of your experiment code is unaffected.
 
 Roughly 80% of a well-structured experiment codebase transfers directly from desktop to VR.
 
-## Panda3D OpenXR Integration
+## Panda3D VR Integration
 
-Ursina is built on [Panda3D](https://www.panda3d.org/), which supports VR through the [OpenXR](https://www.khronos.org/openxr/) standard. OpenXR is the cross-platform API for VR and AR headsets, supported by Meta Quest, Valve Index, HTC Vive, and others.
+Ursina is built on [Panda3D](https://www.panda3d.org/), which supports VR through community plugins. Two options are available, both by the same author ([el-dee](https://github.com/el-dee)):
+
+| Package | Standard | Install | Best for |
+|---------|----------|---------|----------|
+| [panda3d-openxr](https://github.com/el-dee/panda3d-openxr) | OpenXR | `pip install panda3d-openxr` | New projects (industry standard) |
+| [panda3d-openvr](https://github.com/el-dee/panda3d-openvr) | OpenVR/SteamVR | `pip install panda3d-openvr` | More mature, action manifests, hand skeleton tracking |
+
+Both require a **PC-tethered** headset. Standalone Quest apps are not supported -- the Quest must be connected via USB (Quest Link) or wirelessly (Air Link) so it acts as a PCVR display.
 
 The integration works by:
 
-1. Initializing an OpenXR session instead of a regular window.
+1. Initializing an OpenXR (or OpenVR) session alongside the Panda3D window.
 2. Creating a stereo camera rig that renders left and right eye views.
 3. Submitting each frame to the headset compositor.
-4. Reading headset and controller poses each frame.
-
-Panda3D's OpenXR support is available through community plugins. The most active implementation is [panda3d-simplepbr](https://github.com/Moguri/panda3d-simplepbr) combined with [panda3d-openxr](https://github.com/nicoco007/panda3d-openxr).
+4. Providing anchor nodes for the headset and each hand controller that update their pose every frame.
 
 ## Code Comparison: Desktop vs VR
 
@@ -91,18 +96,18 @@ floor = Entity(model='quad', scale=(20, 20), rotation_x=90,
                texture='grass', collider='box')
 Sky()
 
-# Desktop camera
+# Desktop camera and movement
 player = FirstPersonController()
 player.gravity = 0
 
 app.run()
 ```
 
-### VR (what changes)
+### VR with panda3d-openxr (what changes)
 
 ```python
 from ursina import *
-from panda3d_openxr import OpenXRSession
+from p3dopenxr.p3dopenxr import P3DOpenXR
 
 app = Ursina()
 
@@ -111,30 +116,52 @@ floor = Entity(model='quad', scale=(20, 20), rotation_x=90,
                texture='grass', collider='box')
 Sky()
 
-# VR camera rig (replaces FirstPersonController)
-xr_session = OpenXRSession()
-xr_session.attach_to(app)
+# Initialize OpenXR -- connects to headset, starts stereo rendering
+xr = P3DOpenXR()
+xr.init()
 
-def update():
-    # Read headset pose
-    head_pos, head_rot = xr_session.get_head_pose()
-    camera.position = head_pos
-    camera.rotation = head_rot
+# Attach visible models to tracked hand controllers
+left_hand = Entity(model='cube', scale=0.1, color=color.azure)
+left_hand.reparent_to(xr.left_hand_anchor)
 
-    # Read controller input
-    left_stick = xr_session.get_controller_axis('left', 'thumbstick')
-    # ... move player based on stick input ...
+right_hand = Entity(model='cube', scale=0.1, color=color.orange)
+right_hand.reparent_to(xr.right_hand_anchor)
+
+# Head tracking is automatic -- xr.hmd_anchor follows the headset
 
 app.run()
 ```
 
-The scene-building code is unchanged. The state machine, data logging, and trigger code are unchanged. Only the input and camera sections differ.
+### VR with panda3d-openvr (alternative, more features)
+
+```python
+from ursina import *
+from p3dopenvr.p3dopenvr import P3DOpenVR
+
+app = Ursina()
+
+# Scene building -- identical
+floor = Entity(model='quad', scale=(20, 20), rotation_x=90,
+               texture='grass', collider='box')
+Sky()
+
+# Initialize OpenVR -- requires SteamVR running
+ovr = P3DOpenVR()
+ovr.init()
+
+# When a controller is detected, attach a model to it
+def on_new_device(device_index, device_anchor):
+    marker = Entity(model='cube', scale=0.1, color=color.orange)
+    marker.reparent_to(device_anchor)
+
+ovr.set_new_tracked_device_handler(on_new_device)
+
+app.run()
+```
+
+The scene-building code is unchanged across all three versions. The state machine, data logging, and trigger code are unchanged. Only initialization and input handling differ.
 
 ## Alternative Paths
-
-### OpenHMD
-
-[OpenHMD](http://www.openhmd.net/) is an older, lightweight library for headset access. It supports fewer headsets than OpenXR but may be simpler for specific hardware. Suitable when you need basic head tracking without full controller support.
 
 ### WebXR
 
@@ -146,13 +173,14 @@ For projects that outgrow Python -- large environments, complex physics, photore
 
 ## Recommended VR Hardware for Research
 
-| Headset         | Standalone | PC-Tethered | Eye Tracking | Best For                     |
-|-----------------|:----------:|:-----------:|:------------:|------------------------------|
-| Meta Quest 3    | Yes        | Yes         | No           | General-purpose, affordable  |
-| Meta Quest Pro  | Yes        | Yes         | Yes          | Eye tracking research        |
-| HTC Vive Pro Eye| No         | Yes         | Yes          | Lab-based EEG + eye tracking |
-| Valve Index     | No         | Yes         | No           | High refresh rate, finger tracking |
-| Varjo Aero      | No         | Yes         | Yes          | Highest visual fidelity      |
+| Headset              | Standalone | PC-Tethered | Eye Tracking | Best For                     |
+|----------------------|:----------:|:-----------:|:------------:|------------------------------|
+| Meta Quest 3/3S      | Yes        | Yes         | No           | General-purpose, affordable  |
+| Meta Quest Pro       | Yes        | Yes         | Yes          | Eye tracking research        |
+| HTC Vive Pro Eye     | No         | Yes         | Yes          | Lab-based EEG + eye tracking |
+| Valve Index          | No         | Yes         | No           | High refresh rate, finger tracking |
+| Pimax Crystal Super  | No         | Yes         | Yes          | Wide FOV, high resolution    |
+| Varjo XR-4           | No         | Yes         | Yes          | Highest visual fidelity      |
 
 **For getting started**: Meta Quest 3 offers the best balance of cost, quality, and compatibility. It works standalone (no PC required) and tethered (for Panda3D/OpenXR integration).
 

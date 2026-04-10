@@ -49,7 +49,7 @@ A `Text` entity parented to `camera.ui` stays fixed on screen regardless of wher
 score_text = Text(
     text='Stars: 0/3',
     position=(-0.85, 0.45),
-    scale=2,
+    scale=1,
     parent=camera.ui,
 )
 ```
@@ -79,7 +79,7 @@ score = 0
 score_text = Text(
     text=f'Stars: {score}/{len(stars)}',
     position=(-0.85, 0.45),
-    scale=2,
+    scale=1,
     parent=camera.ui,
     color=color.white,
 )
@@ -87,7 +87,7 @@ score_text = Text(
 win_text = Text(
     text='Well done!',
     origin=(0, 0),
-    scale=4,
+    scale=2,
     color=color.green,
     parent=camera.ui,
     enabled=False,

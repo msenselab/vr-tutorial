@@ -54,10 +54,12 @@ Afternoon
 ::right::
 
 - **13:00** M5: Capstone -- MazeWalker-Py
-- **13:40** M6: VR Roadmap
-- **13:55** M7: Beyond Primitives
-- **14:10** Unity VR in Research (Artyom)
-- **15:10** Wrap-up & Homework
+- **13:45** M6: VR Roadmap
+- **14:10** Break (20 min)
+- **14:30** M7: Beyond Primitives
+- **15:00** Wrap-up & Homework
+- **15:30** break (20 min)
+- **15:50** Unity VR in Research (Artyom)
 
 **Two tracks**: *Builders* (design & code) · *Runners* (configure & operate)
 
@@ -1268,31 +1270,32 @@ The good news: about 90% of your code stays the same. What changes is the camera
 ```python
 # Desktop version (what you built today)
 from ursina import *
+app = Ursina()
 player = FirstPersonController()
+```
 
-# VR version (Panda3D OpenXR)
+```python
+# VR version — pip install panda3d-openxr
 from ursina import *
-from ursina.xr import VRPlayer  # hypothetical — use Panda3D OpenXR
+from p3dopenxr.p3dopenxr import P3DOpenXR
 
-player = VRPlayer()
-player.hand_left.on_grip = grab_object
-player.hand_right.on_trigger = interact
+app = Ursina()
+xr = P3DOpenXR()       # connects to headset
+xr.init()              # starts stereo rendering
+
+# Attach cubes to tracked hand controllers
+Entity(model='cube', scale=0.1, color=color.azure,
+       parent=xr.left_hand_anchor)
+Entity(model='cube', scale=0.1, color=color.orange,
+       parent=xr.right_hand_anchor)
 ```
 
-The core change:
+Your room, your stars, your state machine -- **unchanged**.
 
-```diff
-- player = FirstPersonController()
-+ player = VRPlayer()
-+ player.ipd = 0.063          # interpupillary distance
-+ player.tracking_origin = 'floor'
-+ player.render_stereo = True  # one pass per eye
-```
-
-Everything else -- your room, your stars, your state machine -- **unchanged**.
+Works with any **OpenXR headset**: Meta Quest (via Link), HTC Vive, Valve Index, Pimax.
 
 <!--
-This is the payoff of using a Python 3D engine. When you're ready for VR, you swap the camera and input code.
+This is the payoff of using a Python 3D engine. When you're ready for VR, you add the panda3d-openxr package, initialize it, and attach models to the hand anchors. Your scene code stays identical. Any SteamVR or OpenXR compatible headset works — Quest via USB Link cable, HTC Vive, Valve Index, Pimax.
 -->
 
 ---
@@ -1452,7 +1455,8 @@ Documentation
 - Ursina: [ursinaengine.org](https://www.ursinaengine.org/)
 - Panda3D: [panda3d.org](https://www.panda3d.org/)
 - pygame: [pygame.org/docs](https://www.pygame.org/docs/)
-- Panda3D OpenXR plugin documentation
+- panda3d-openxr: [github.com/el-dee/panda3d-openxr](https://github.com/el-dee/panda3d-openxr)
+- panda3d-openvr: [github.com/el-dee/panda3d-openvr](https://github.com/el-dee/panda3d-openvr)
 
 ::right-title::
 This Workshop

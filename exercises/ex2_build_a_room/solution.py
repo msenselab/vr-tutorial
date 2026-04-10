@@ -111,6 +111,7 @@ pillar = Entity(
 # --- Player ----------------------------------------------------------------
 player = FirstPersonController()
 player.gravity = 0       # flat scene, no need for falling
+player.cursor.visible = False
 player.position = (0, 1, 0)  # start near centre, slightly above floor
 
 app.run()
