@@ -144,7 +144,7 @@ Run this in your terminal:
 
 ```bash
 cd vr-tutorial
-source venv/bin/activate
+source .venv/bin/activate
 python exercises/ex1_hello_ursina/hello_cube.py
 ```
 

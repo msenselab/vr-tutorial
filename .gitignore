@@ -40,3 +40,6 @@ data/
 # Environment
 .env
 .env.local
+
+# uv
+uv.lock

@@ -45,30 +45,30 @@ Navigate to where you want to work and create a virtual environment:
 
 ```bash
 cd vr-tutorial
-python -m venv venv
+uv venv
 ```
 
 Activate it:
 
 ```bash
 # macOS / Linux
-source venv/bin/activate
+source .venv/bin/activate
 
 # Windows (Command Prompt)
-venv\Scripts\activate
+.venv\Scripts\activate
 
 # Windows (PowerShell)
-venv\Scripts\Activate.ps1
+.venv\Scripts\Activate.ps1
 ```
 
-Your terminal prompt should now show `(venv)` at the beginning.
+Your terminal prompt should now show `(.venv)` at the beginning.
 
 ## 3. Install Dependencies
 
 With the virtual environment activated:
 
 ```bash
-pip install ursina pygame
+uv pip install ursina pygame
 ```
 
 This installs the Ursina game engine and pygame (used for gamepad input).
@@ -93,24 +93,24 @@ If you see the cube, you are ready for the workshop.
 
 ### ModuleNotFoundError: No module named 'ursina'
 
-The most common cause is running Python from outside your virtual environment. Make sure you see `(venv)` in your terminal prompt. If not, activate the environment first:
+The most common cause is running Python from outside your virtual environment. Make sure you see `(.venv)` in your terminal prompt. If not, activate the environment first:
 
 ```bash
-source venv/bin/activate    # macOS/Linux
-venv\Scripts\activate       # Windows
+source .venv/bin/activate    # macOS/Linux
+.venv\Scripts\activate       # Windows
 ```
 
 Then try again. If the error persists, reinstall:
 
 ```bash
-pip install --force-reinstall ursina pygame
+uv pip install --force-reinstall ursina pygame
 ```
 
 ### Window opens and immediately closes
 
 Check the terminal for error messages. Common causes:
 
-- A missing dependency -- run `pip install ursina` again to make sure everything is installed.
+- A missing dependency -- run `uv pip install ursina` again to make sure everything is installed.
 - An outdated GPU driver -- update your graphics drivers.
 - Python version too old -- Ursina requires Python 3.8+, and we recommend 3.11+.
 
@@ -148,10 +148,10 @@ Gamepad input is optional. All exercises work with keyboard and mouse.
 
 ### pip install fails behind a corporate firewall
 
-If `pip install` times out or fails with SSL errors, try:
+If `uv pip install` times out or fails with SSL errors, try:
 
 ```bash
-pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org ursina pygame
+uv pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org ursina pygame
 ```
 
 Or download the packages manually from [PyPI](https://pypi.org/) and install from local files.

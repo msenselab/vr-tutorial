@@ -1,0 +1,12 @@
+[project]
+name = "vr-tutorial"
+version = "0.1.0"
+description = "From Screen to Scene: Building VR Experiments with Python"
+requires-python = ">=3.11"
+dependencies = [
+    "ursina>=7.0.0",
+    "pygame",
+]
+
+[tool.setuptools]
+py-modules = []

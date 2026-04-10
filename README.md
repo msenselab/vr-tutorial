@@ -34,23 +34,28 @@ Total: ~4 hours including breaks.
 
 Please complete these steps **before** the workshop.
 
-### 1. Install Python 3.11+
+### 1. Install Python 3.11+ and uv
 
-Download from [python.org](https://www.python.org/downloads/) or use your system package manager.
+Download Python from [python.org](https://www.python.org/downloads/) or use your system package manager. Then install [uv](https://docs.astral.sh/uv/getting-started/installation/) (a fast Python package manager):
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh   # macOS/Linux
+# or: pip install uv
+```
 
 ### 2. Create a virtual environment
 
 ```bash
 cd vr-tutorial
-python -m venv venv
-source venv/bin/activate    # macOS/Linux
-venv\Scripts\activate       # Windows
+uv venv
+source .venv/bin/activate    # macOS/Linux
+.venv\Scripts\activate       # Windows
 ```
 
 ### 3. Install dependencies
 
 ```bash
-pip install ursina pygame
+uv pip install ursina pygame
 ```
 
 ### 4. Verify your setup
@@ -99,7 +104,7 @@ Each exercise folder contains a `template.py` (starting point) and a `solution.p
 ### Exercises
 
 ```bash
-source venv/bin/activate
+source .venv/bin/activate
 python exercises/ex1_hello_ursina/hello_cube.py
 ```
 

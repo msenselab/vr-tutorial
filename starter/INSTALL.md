@@ -14,15 +14,15 @@ You need Python 3.11 or newer.
 
 ```bash
 cd starter
-python3 -m venv venv
-source venv/bin/activate    # macOS/Linux
-venv\Scripts\activate       # Windows
+uv venv
+source .venv/bin/activate    # macOS/Linux
+.venv\Scripts\activate       # Windows
 ```
 
 ## 3. Install Dependencies
 
 ```bash
-pip install -r requirements.txt
+uv pip install -r requirements.txt
 ```
 
 ## 4. Verify Your Setup
