@@ -100,7 +100,7 @@ swing = Entity(
 info_text = Text(
     text='',
     position=(-0.85, 0.45),
-    scale=0.1,
+    scale=2,
     parent=camera.ui,
     color=color.white,
 )

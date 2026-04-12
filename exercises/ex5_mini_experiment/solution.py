@@ -119,19 +119,16 @@ class Experiment(Entity):
 
         # UI elements
         self.instruction_text = Text(
-            text='', origin=(0, 0), scale=0.1, parent=camera.ui,
+            text='', origin=(0, 0), scale=2, parent=camera.ui,
         )
         self.fixation_text = Text(
-            text='+', origin=(0, 0), scale=0.1, parent=camera.ui,
-            enabled=False,
+            text='', origin=(0, 0), scale=2, parent=camera.ui,
         )
         self.score_text = Text(
-            text='', position=(-0.85, 0.45), scale=0.11, parent=camera.ui,
-            enabled=False,
+            text='', position=(-0.85, 0.45), scale=2, parent=camera.ui,
         )
         self.feedback_text = Text(
-            text='', origin=(0, 0), scale=0.1, parent=camera.ui,
-            enabled=False,
+            text='', origin=(0, 0), scale=2, parent=camera.ui,
         )
 
         # Start the first trial
@@ -150,7 +147,6 @@ class Experiment(Entity):
             f"({n} star{'s' if n > 1 else ''})\n\n"
             f"Press SPACE to start"
         )
-        self.instruction_text.enabled = True
         self.player.enabled = False
         mouse.locked = False
 
@@ -159,8 +155,8 @@ class Experiment(Entity):
     def show_fixation(self):
         """Show fixation cross for 1 second, then proceed to task."""
         self.state = 'FIXATION'
-        self.instruction_text.enabled = False
-        self.fixation_text.enabled = True
+        self.instruction_text.text = ''
+        self.fixation_text.text = '+'
         send_trigger(TRIG_FIXATION)
         invoke(self.start_task, delay=1)
 
@@ -169,7 +165,7 @@ class Experiment(Entity):
     def start_task(self):
         """Build the room, spawn stars, enable the player."""
         self.state = 'TASK'
-        self.fixation_text.enabled = False
+        self.fixation_text.text = ''
 
         # Build room and spawn stars for this trial
         self.room_entities = build_room()
@@ -186,7 +182,6 @@ class Experiment(Entity):
 
         # HUD
         self.score_text.text = f"Stars: 0/{trial['n_stars']}"
-        self.score_text.enabled = True
 
         # Timing
         self.trial_start_time = time.time()
@@ -222,7 +217,7 @@ class Experiment(Entity):
 
         # Disable player and HUD
         self.player.enabled = False
-        self.score_text.enabled = False
+        self.score_text.text = ''
         mouse.locked = False
 
         self.show_feedback(trial, duration, completed)
@@ -240,13 +235,12 @@ class Experiment(Entity):
             f"Time: {duration:.1f}s\n\n"
             f"Press SPACE to continue"
         )
-        self.feedback_text.enabled = True
 
     # --- Advance to next trial ------------------------------------------------
 
     def next_trial(self):
         """Move to next trial or end the experiment."""
-        self.feedback_text.enabled = False
+        self.feedback_text.text = ''
         self.current_trial += 1
         if self.current_trial < len(self.trials):
             self.show_instruction()
@@ -263,7 +257,6 @@ class Experiment(Entity):
             "Data saved to experiment_data.csv\n"
             "Press ESC to exit"
         )
-        self.instruction_text.enabled = True
         self.csv_file.close()
 
     # --- Per-frame logic (TASK state only) ------------------------------------
