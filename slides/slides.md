@@ -6,6 +6,9 @@ drawings:
   persist: false
 transition: slide-left
 mdc: true
+themeConfig:
+  paginationX: r
+  paginationY: t
 ---
 
 <div class="h-full flex flex-col justify-center items-center text-center">
@@ -73,6 +76,8 @@ layout: section
 
 # Module 1
 ## Welcome & Setup Check
+
+<img src="/images/m1_welcome.svg" class="mx-auto mt-4 rounded-lg" style="max-height:260px;" />
 
 <!--
 Let's start by getting to know the room and making sure everyone's environment works.
@@ -215,6 +220,8 @@ layout: section
 
 # Module 2
 ## Ursina Fundamentals
+
+<img src="/images/m2_fundamentals.svg" class="mx-auto mt-4 rounded-lg" style="max-height:260px;" />
 
 <!--
 Now let's learn the building blocks. Everything in Ursina is an Entity.
@@ -471,6 +478,8 @@ layout: section
 # Module 3
 ## Adding Interaction & Input
 
+<img src="/images/m3_interaction.svg" class="mx-auto mt-4 rounded-lg" style="max-height:260px;" />
+
 <!--
 So far our scene is pretty but static. Let's make things happen when the player does something.
 -->
@@ -694,6 +703,8 @@ layout: section
 
 # Module 4
 ## Experiment Paradigm Design
+
+<img src="/images/m4_experiment.svg" class="mx-auto mt-4 rounded-lg" style="max-height:260px;" />
 
 <!--
 Now we move from game-like interaction to real experiment structure. This is where we add trials, conditions, timing, and data logging.
@@ -1014,6 +1025,8 @@ layout: section
 # Module 5
 ## Capstone: MazeWalker-Py
 
+<img src="/images/m5_mazewalker.svg" class="mx-auto mt-4 rounded-lg" style="max-height:260px;" />
+
 <!--
 Let's see what a complete, production-quality experiment looks like using the same stack you've been learning.
 -->
@@ -1220,6 +1233,8 @@ layout: section
 # Module 6
 ## VR Roadmap & Wrap-up
 
+<img src="/images/m6_vr.svg" class="mx-auto mt-4 rounded-lg" style="max-height:260px;" />
+
 <!--
 Final module. Let's talk about what changes when you move from desktop 3D to actual VR headsets.
 -->
@@ -1304,6 +1319,8 @@ layout: section
 
 # Module 7
 ## Beyond Primitives: 3D Models
+
+<img src="/images/m7_models.svg" class="mx-auto mt-4 rounded-lg" style="max-height:260px;" />
 
 <!--
 So far we've built everything from cubes and quads. Let's look at how to bring realistic 3D models into your experiments.
@@ -1538,4 +1555,11 @@ The workshop gave you the architecture. Now fill it with your own research quest
 <!--
 Thank you for your time and attention. I'm happy to take questions now, and you can always reach me by email or open an issue on the GitHub repository.
 -->
+
+<style>
+/* Hide page number on module section divider slides */
+.slidev-layout.section .absolute.p-2.text-xs {
+  display: none !important;
+}
+</style>
 

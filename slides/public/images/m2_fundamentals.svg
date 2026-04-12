@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="bg2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f0f4ff"/>
+      <stop offset="100%" style="stop-color:#e8f0fe"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="450" fill="url(#bg2)"/>
+  <!-- Subtle grid -->
+  <g stroke="#c5d0f0" stroke-width="0.8" opacity="0.5">
+    <line x1="0" y1="90" x2="800" y2="90"/>
+    <line x1="0" y1="180" x2="800" y2="180"/>
+    <line x1="0" y1="270" x2="800" y2="270"/>
+    <line x1="0" y1="360" x2="800" y2="360"/>
+    <line x1="160" y1="0" x2="160" y2="450"/>
+    <line x1="320" y1="0" x2="320" y2="450"/>
+    <line x1="480" y1="0" x2="480" y2="450"/>
+    <line x1="640" y1="0" x2="640" y2="450"/>
+  </g>
+  <!-- Room wireframe - perspective view -->
+  <g stroke="#5b8dee" stroke-width="1.8" fill="none" opacity="0.8">
+    <!-- Floor -->
+    <polygon points="200,360 600,360 690,285 310,285" fill="#deeaff" stroke="#5b8dee" stroke-width="1.5" opacity="0.5"/>
+    <!-- Back wall -->
+    <polygon points="310,285 690,285 690,110 310,110" fill="#eef3ff" stroke="#5b8dee" stroke-width="1.5" opacity="0.4"/>
+    <!-- Left wall -->
+    <polygon points="200,360 310,285 310,110 200,185" fill="#e8f0fe" stroke="#5b8dee" stroke-width="1.5" opacity="0.5"/>
+    <!-- Right wall hint -->
+    <polygon points="600,360 690,285 690,110 600,185" fill="#e2ecff" stroke="#8ab4f8" stroke-width="1.2" opacity="0.35"/>
+    <!-- Ceiling -->
+    <polygon points="200,185 310,110 690,110 600,185" fill="none" stroke="#8ab4f8" stroke-width="1.2" opacity="0.4"/>
+  </g>
+  <!-- Table wireframe inside room -->
+  <g stroke="#2e7d32" stroke-width="1.5" fill="none" opacity="0.85">
+    <rect x="455" y="298" width="80" height="10" rx="2"/>
+    <line x1="460" y1="308" x2="458" y2="330"/>
+    <line x1="530" y1="308" x2="528" y2="330"/>
+    <line x1="465" y1="308" x2="463" y2="330"/>
+    <line x1="525" y1="308" x2="523" y2="330"/>
+  </g>
+  <!-- Sphere object -->
+  <circle cx="380" cy="318" r="18" stroke="#e67e00" stroke-width="1.8" fill="#fff8ee" opacity="0.9"/>
+  <!-- Sphere equator hint -->
+  <ellipse cx="380" cy="318" rx="18" ry="6" stroke="#e67e00" stroke-width="1" fill="none" opacity="0.5"/>
+  <!-- XYZ Axis indicator - bottom left -->
+  <g font-family="monospace" font-size="13" font-weight="bold">
+    <!-- X axis - red -->
+    <line x1="100" y1="390" x2="160" y2="390" stroke="#e53935" stroke-width="2.5"/>
+    <polygon points="160,386 170,390 160,394" fill="#e53935"/>
+    <text x="176" y="395" fill="#e53935">X</text>
+    <!-- Y axis - green -->
+    <line x1="100" y1="390" x2="100" y2="330" stroke="#43a047" stroke-width="2.5"/>
+    <polygon points="96,330 100,320 104,330" fill="#43a047"/>
+    <text x="88" y="318" fill="#43a047">Y</text>
+    <!-- Z axis - blue (left-handed: into screen, shown as going lower-left) -->
+    <line x1="100" y1="390" x2="62" y2="420" stroke="#1e88e5" stroke-width="2.5"/>
+    <polygon points="64,421 55,428 60,418" fill="#1e88e5"/>
+    <text x="42" y="440" fill="#1e88e5">Z</text>
+    <!-- Origin dot -->
+    <circle cx="100" cy="390" r="4" fill="#37474f"/>
+  </g>
+  <!-- Labels -->
+  <text x="355" y="300" font-family="sans-serif" font-size="11" fill="#e67e00" opacity="0.8">Entity</text>
+  <text x="455" y="290" font-family="sans-serif" font-size="11" fill="#2e7d32" opacity="0.8">table</text>
+  <!-- Code hint card -->
+  <rect x="530" y="340" width="220" height="70" rx="6" fill="white" stroke="#c5d0f0" stroke-width="1"/>
+  <text x="545" y="360" font-family="monospace" font-size="11" fill="#3776ab">Entity(</text>
+  <text x="555" y="378" font-family="monospace" font-size="11" fill="#555">  model=</text><text x="610" y="378" font-family="monospace" font-size="11" fill="#e67e00">'cube'</text>
+  <text x="555" y="396" font-family="monospace" font-size="11" fill="#555">  position=(x,y,z)</text>
+  <text x="545" y="406" font-family="monospace" font-size="11" fill="#3776ab">)</text>
+</svg>
