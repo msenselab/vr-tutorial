@@ -103,8 +103,9 @@ pillar = Entity(
 # --- Sky & Lighting --------------------------------------------------------
 Sky()
 
-sun = DirectionalLight()
+sun = DirectionalLight(shadows=False)
 sun.look_at(Vec3(1, -1, -1))
+AmbientLight(color=color.rgba(0.3, 0.3, 0.3, 1))
 
 # --- Collectible stars -----------------------------------------------------
 # Three gold spheres placed around the room for the player to collect.

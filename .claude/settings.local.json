@@ -5,7 +5,15 @@
       "Bash(.venv/Scripts/pip.exe install:*)",
       "Bash(uv pip:*)",
       "Bash(ls D:/vr-tutorial/*.csv)",
-      "Bash(ls D:/vr-tutorial/exercises/ex7_maze_explorer/*.csv)"
+      "Bash(ls D:/vr-tutorial/exercises/ex7_maze_explorer/*.csv)",
+      "Bash(python -c \"import ursina; print\\(ursina.__version__\\)\")",
+      "Bash(python -c \"from ursina import DirectionalLight; import inspect; print\\(inspect.getsource\\(DirectionalLight\\)\\)\")",
+      "Bash(python -c \"from ursina import DirectionalLight; import inspect; print\\(inspect.getsourcefile\\(DirectionalLight\\)\\)\")",
+      "Bash(python -c \"from ursina.lights import Light; import inspect; print\\(inspect.getsource\\(Light\\)\\)\")",
+      "Bash(pip show:*)",
+      "Bash(.venv/Scripts/pip show:*)",
+      "Bash(D:/vr-tutorial/.venv/Scripts/python.exe:*)",
+      "Bash(ls D:/vr-tutorial/.venv/Lib/site-packages/ursina/*.py)"
     ]
   }
 }

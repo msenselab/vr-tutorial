@@ -78,8 +78,9 @@ right_wall = Entity(
 )
 
 Sky()
-sun = DirectionalLight()
+sun = DirectionalLight(shadows=False)
 sun.look_at(Vec3(1, -1, -1))
+AmbientLight(color=color.rgba(0.3, 0.3, 0.3, 1))
 
 # --- Load 3D models -------------------------------------------------------
 

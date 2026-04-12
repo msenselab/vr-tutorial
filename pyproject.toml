@@ -5,7 +5,7 @@ description = "From Screen to Scene: Building VR Experiments with Python"
 requires-python = ">=3.11,<3.12"
 dependencies = [
     "ursina<8",
-    "panda3d==1.10.13",
+    "panda3d",
     "pygame",
     "matplotlib",
     "jupyter",
