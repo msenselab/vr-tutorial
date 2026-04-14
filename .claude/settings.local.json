@@ -13,7 +13,9 @@
       "Bash(pip show:*)",
       "Bash(.venv/Scripts/pip show:*)",
       "Bash(D:/vr-tutorial/.venv/Scripts/python.exe:*)",
-      "Bash(ls D:/vr-tutorial/.venv/Lib/site-packages/ursina/*.py)"
+      "Bash(ls D:/vr-tutorial/.venv/Lib/site-packages/ursina/*.py)",
+      "Bash(.venv/Scripts/python -c \"import ursina; print\\('ursina ok'\\)\")",
+      "Bash(.venv/Scripts/python -c \"import pygame; print\\('pygame ok'\\)\")"
     ]
   }
 }
