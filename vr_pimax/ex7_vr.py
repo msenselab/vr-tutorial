@@ -43,7 +43,7 @@ import time
 import random
 
 from ursina import *
-from vr_utils import enable_vr, VRPlayer, EyeTracker   # [VR-1,2,4]
+from vr_utils import enable_vr, VRPlayer, EyeTracker, VRControllerInput   # [VR-1,2,4]
 
 # ---------------------------------------------------------------------------
 # Constants  (unchanged)
@@ -187,7 +187,8 @@ class Experiment(Entity):
         self.trial_t0      = 0.0
 
         # [VR-4] Eye tracker
-        self.eye = EyeTracker()
+        self.eye  = EyeTracker()
+        self.ctrl = VRControllerInput()
 
         # CSV files — [VR-5] trajectory has extra gaze columns
         self._exp_file   = open('maze_experiment_vr.csv', 'w', newline='')
@@ -414,6 +415,13 @@ class Experiment(Entity):
     # -------------------------------------------------------------------------
 
     def update(self):
+        # Controller trigger acts as SPACE for state transitions
+        if self.ctrl.available and self.ctrl.trigger_just_pressed():
+            if self.state == 'INSTRUCTION':
+                self.show_fixation()
+            elif self.state == 'FEEDBACK':
+                self.next_trial()
+
         if self.state != 'TASK':
             return
         t = self.trials[self.current_trial]

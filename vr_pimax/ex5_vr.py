@@ -37,7 +37,7 @@ import time
 import random
 
 from ursina import *
-from vr_utils import enable_vr, VRPlayer, EyeTracker   # [VR-1,2,4]
+from vr_utils import enable_vr, VRPlayer, EyeTracker, VRControllerInput   # [VR-1,2,4]
 
 # ---------------------------------------------------------------------------
 # Trigger codes (mock — replace send_trigger() with hardware call)
@@ -126,7 +126,11 @@ class Experiment(Entity):
         self.trial_start_time = 0.0
 
         # [VR-4] Eye tracker
-        self.eye = EyeTracker()
+        self.eye  = EyeTracker()
+        # Controller — shared VRControllerInput (VRPlayer also has one, but
+        # we need a second instance here to track trigger edges for the state
+        # machine independently of movement).
+        self.ctrl = VRControllerInput()
 
         # CSV logging — [VR-5] gaze columns added at the end
         self.csv_file   = open('experiment_data_vr.csv', 'w', newline='')
@@ -274,6 +278,13 @@ class Experiment(Entity):
     # -------------------------------------------------------------------------
 
     def update(self):
+        # Controller trigger acts as SPACE for state transitions
+        if self.ctrl.available and self.ctrl.trigger_just_pressed():
+            if self.state == 'INSTRUCTION':
+                self.show_fixation()
+            elif self.state == 'FEEDBACK':
+                self.next_trial()
+
         if self.state != 'TASK':
             return
 

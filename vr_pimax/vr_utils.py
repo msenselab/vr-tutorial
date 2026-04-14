@@ -11,7 +11,8 @@ Tested configuration
 Public API
 ----------
   enable_vr(render_scale)   — call BEFORE Ursina() to activate VR rendering
-  VRPlayer                  — movement-only FPS entity (no mouse look)
+  VRControllerInput         — polls SteamVR controller thumbstick + trigger
+  VRPlayer                  — movement-only FPS entity (keyboard + controller)
   EyeTracker                — gaze direction sampler with graceful fallback
 """
 
@@ -41,20 +42,127 @@ def enable_vr(render_scale: float = 0.8) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Controller input
+# ---------------------------------------------------------------------------
+
+class VRControllerInput:
+    """
+    Polls SteamVR controller state (thumbstick + trigger) via the
+    ``openvr`` Python package.
+
+    Install
+    -------
+    pip install openvr
+
+    Works alongside panda3d-openvr — both packages talk to the same
+    already-running SteamVR runtime, so there is no conflict.
+
+    Axis mapping (standard SteamVR / Pimax controllers)
+    ----------------------------------------------------
+      rAxis[0].x / .y   thumbstick  (-1 … +1)
+      rAxis[1].x         trigger     ( 0 … +1)
+
+    Falls back silently if the package is missing or no controller is found,
+    so keyboard-only use always works without changes.
+    """
+
+    TRIGGER_THRESHOLD = 0.5   # above = pressed, below = released
+
+    def __init__(self):
+        self._ok      = False
+        self._system  = None
+        self._indices = None          # cached controller device indices
+        self._trigger_prev = {'left': 0.0, 'right': 0.0}
+
+        try:
+            import openvr as _ovr
+            self._ovr    = _ovr
+            self._system = _ovr.VRSystem()   # reuses the already-running session
+            self._ok     = True
+            print("[VRController] Ready.")
+        except ImportError:
+            print("[VRController] openvr package not installed  →  pip install openvr")
+        except Exception as e:
+            print(f"[VRController] Init failed: {e}")
+
+    # ------------------------------------------------------------------
+    def _get_indices(self) -> list[int]:
+        """Return cached list of controller device indices."""
+        if self._indices is None:
+            found = []
+            for i in range(self._ovr.k_unMaxTrackedDeviceCount):
+                if (self._system.getTrackedDeviceClass(i) ==
+                        self._ovr.TrackedDeviceClass_Controller):
+                    found.append(i)
+            if found:
+                self._indices = found
+                print(f"[VRController] Found {len(found)} controller(s): {found}")
+            else:
+                return []
+        return self._indices
+
+    def _get_state(self, hand: str):
+        indices = self._get_indices()
+        if not indices:
+            return False, None
+        idx = indices[-1] if hand == 'right' else indices[0]
+        return self._system.getControllerState(idx)
+
+    # ------------------------------------------------------------------
+    def get_thumbstick(self, hand: str = 'right') -> tuple[float, float]:
+        """
+        Return (x, y) thumbstick values in range [-1, 1].
+        x = strafe left/right,  y = forward (+) / back (-)
+        """
+        if not self._ok:
+            return (0.0, 0.0)
+        try:
+            ok, state = self._get_state(hand)
+            if ok:
+                return (state.rAxis[0].x, state.rAxis[0].y)
+        except Exception:
+            pass
+        return (0.0, 0.0)
+
+    def get_trigger(self, hand: str = 'right') -> float:
+        """Return trigger value in range [0, 1]."""
+        if not self._ok:
+            return 0.0
+        try:
+            ok, state = self._get_state(hand)
+            if ok:
+                return state.rAxis[1].x
+        except Exception:
+            pass
+        return 0.0
+
+    def trigger_just_pressed(self, hand: str = 'right') -> bool:
+        """
+        Return True on the frame the trigger crosses the press threshold.
+        Must be called exactly once per frame for correct edge detection.
+        """
+        prev = self._trigger_prev[hand]
+        curr = self.get_trigger(hand)
+        self._trigger_prev[hand] = curr
+        return prev < self.TRIGGER_THRESHOLD <= curr
+
+    @property
+    def available(self) -> bool:
+        return self._ok
+
+
+# ---------------------------------------------------------------------------
 # VR-friendly player controller
 # ---------------------------------------------------------------------------
 
 class VRPlayer(Entity):
     """
-    Minimal first-person movement controller for VR.
+    First-person movement controller for VR.
 
-    Replaces Ursina's FirstPersonController so that:
-      - WASD drives locomotion
-      - Mouse is NOT used for looking (the HMD handles head orientation)
+    Accepts input from both keyboard (WASD) and controller thumbstick
+    simultaneously — whichever gives a non-zero signal is used.
 
-    The entity acts as the locomotion anchor.  Its ``position`` is used
-    for proximity checks (star collection, trajectory logging, etc.).
-    The actual view direction comes from the Pimax headset automatically.
+    Mouse is NOT used for looking; the HMD handles head orientation.
 
     Parameters
     ----------
@@ -69,21 +177,29 @@ class VRPlayer(Entity):
             **kwargs,
         )
         self.speed   = speed
-        self.gravity = 0     # disable gravity; VR locomotion is comfort-first
+        self.gravity = 0      # disable gravity; VR locomotion is comfort-first
         self.enabled = False  # enabled/disabled by the experiment state machine
+        self._ctrl   = VRControllerInput()
 
     def update(self):
         if not self.enabled:
             return
 
-        dx = held_keys["d"] - held_keys["a"]   # strafe right/left
-        dz = held_keys["w"] - held_keys["s"]   # forward/back
+        # --- keyboard ---
+        kb_x = held_keys["d"] - held_keys["a"]
+        kb_z = held_keys["w"] - held_keys["s"]
+
+        # --- controller thumbstick ---
+        ct_x, ct_y = self._ctrl.get_thumbstick() if self._ctrl.available else (0.0, 0.0)
+
+        # Combine and clamp to [-1, 1]
+        dx = max(-1.0, min(1.0, kb_x + ct_x))
+        dz = max(-1.0, min(1.0, kb_z + ct_y))   # stick y = forward
 
         if dx == 0 and dz == 0:
             return
 
-        # Project the HMD heading onto the horizontal plane so that
-        # looking up/down does not push the player vertically.
+        # Project the HMD heading onto the horizontal plane
         fwd   = Vec3(camera.forward.x, 0, camera.forward.z)
         right = Vec3(camera.right.x,   0, camera.right.z)
 
