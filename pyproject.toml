@@ -6,6 +6,8 @@ requires-python = ">=3.11,<3.12"
 dependencies = [
     "ursina<8",
     "panda3d",
+    "panda3d-openvr",
+    "openvr",
     "pygame",
     "matplotlib",
     "jupyter",

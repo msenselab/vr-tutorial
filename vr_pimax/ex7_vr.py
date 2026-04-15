@@ -185,6 +185,7 @@ class Experiment(Entity):
         self.room_ents     = []
         self._recording    = False
         self.trial_t0      = 0.0
+        self.fixation_t0   = None
 
         # [VR-4] Eye tracker
         self.eye  = EyeTracker()
@@ -254,7 +255,9 @@ class Experiment(Entity):
     def show_fixation(self):
         self.state         = 'FIXATION'
         self.msg_text.text = '+'
+        self.fixation_t0   = time.time()
         send_trigger(TRIG_FIXATION)
+        # Keep the original timer; update() also has a watchdog fallback.
         invoke(self.start_task, delay=1)
 
     # -------------------------------------------------------------------------
@@ -262,7 +265,12 @@ class Experiment(Entity):
     # -------------------------------------------------------------------------
 
     def start_task(self):
+        # Guard against double entry when invoke() and watchdog fire close together.
+        if self.state != 'FIXATION':
+            return
+
         self.state         = 'TASK'
+        self.fixation_t0   = None
         self.msg_text.text = ''
 
         t = self.trials[self.current_trial]
@@ -415,6 +423,12 @@ class Experiment(Entity):
     # -------------------------------------------------------------------------
 
     def update(self):
+        # VR runtimes can occasionally miss delayed invoke callbacks.
+        # Watchdog ensures FIXATION always advances to TASK after ~1s.
+        if self.state == 'FIXATION' and self.fixation_t0 is not None:
+            if (time.time() - self.fixation_t0) >= 1.1:
+                self.start_task()
+
         # Controller trigger acts as SPACE for state transitions
         if self.ctrl.available and self.ctrl.trigger_just_pressed():
             if self.state == 'INSTRUCTION':

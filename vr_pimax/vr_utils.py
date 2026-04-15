@@ -16,8 +16,37 @@ Public API
   EyeTracker                — gaze direction sampler with graceful fallback
 """
 
-from panda3d.core import loadPrcFileData
+from panda3d.core import ConfigVariableString, KeyboardButton, loadPrcFileData
 from ursina import *
+
+
+def _ensure_openvr_initialized() -> bool:
+    """
+    Ensure ``base.openvr`` exists after Ursina/ShowBase has started.
+
+    Some environments do not auto-load the ``p3openvr`` aux display module,
+    so we fall back to explicit Python-side initialization.
+    """
+    try:
+        _ = base.openvr
+        return True
+    except Exception:
+        pass
+
+    try:
+        from p3dopenvr.p3dopenvr import P3DOpenVR
+
+        # p3dopenvr sets textures-power-2 to "none" at import time.
+        # Ursina enables textures-auto-power-2, which requires up/down.
+        ConfigVariableString("textures-power-2").setValue("down")
+
+        base.openvr = P3DOpenVR()
+        base.openvr.init()
+        print("[VR] Fallback init: P3DOpenVR initialized from Python module.")
+        return True
+    except Exception as e:
+        print(f"[VR] Fallback init failed: {e}")
+        return False
 
 
 # ---------------------------------------------------------------------------
@@ -71,23 +100,50 @@ class VRControllerInput:
     def __init__(self):
         self._ok      = False
         self._system  = None
+        self._ovr     = None
+        self._owns_runtime = False
         self._indices = None          # cached controller device indices
+        self._move_axis_idx = {'left': None, 'right': None}
         self._trigger_prev = {'left': 0.0, 'right': 0.0}
+
+        # If the VR layer is already active, reuse it.
+        if _ensure_openvr_initialized():
+            try:
+                import openvr as _ovr
+                self._ovr = _ovr
+                self._system = base.openvr.vr_system
+                self._ok = True
+                print("[VRController] Ready (reusing base.openvr.vr_system).")
+                return
+            except Exception:
+                pass
 
         try:
             import openvr as _ovr
             self._ovr    = _ovr
-            self._system = _ovr.VRSystem()   # reuses the already-running session
+            _ovr.init(_ovr.VRApplication_Scene)
+            self._owns_runtime = True
+            self._system = _ovr.VRSystem()
             self._ok     = True
-            print("[VRController] Ready.")
+            print("[VRController] Ready (direct openvr init).")
         except ImportError:
             print("[VRController] openvr package not installed  →  pip install openvr")
         except Exception as e:
             print(f"[VRController] Init failed: {e}")
 
+    def __del__(self):
+        if self._owns_runtime:
+            try:
+                self._ovr.shutdown()
+            except Exception:
+                pass
+
     # ------------------------------------------------------------------
     def _get_indices(self) -> list[int]:
         """Return cached list of controller device indices."""
+        if self._ovr is None or self._system is None:
+            return []
+
         if self._indices is None:
             found = []
             for i in range(self._ovr.k_unMaxTrackedDeviceCount):
@@ -99,6 +155,14 @@ class VRControllerInput:
                 print(f"[VRController] Found {len(found)} controller(s): {found}")
             else:
                 return []
+
+        # Re-scan if previously cached controllers got disconnected.
+        if self._indices and not any(
+            self._system.isTrackedDeviceConnected(i) for i in self._indices
+        ):
+            self._indices = None
+            return self._get_indices()
+
         return self._indices
 
     def _get_state(self, hand: str):
@@ -106,7 +170,50 @@ class VRControllerInput:
         if not indices:
             return False, None
         idx = indices[-1] if hand == 'right' else indices[0]
+
+        # Prefer SteamVR-reported hand roles when available.
+        try:
+            right_role = self._ovr.TrackedControllerRole_RightHand
+            left_role = self._ovr.TrackedControllerRole_LeftHand
+            for i in indices:
+                role = self._system.getControllerRoleForTrackedDeviceIndex(i)
+                if hand == 'right' and role == right_role:
+                    idx = i
+                    break
+                if hand == 'left' and role == left_role:
+                    idx = i
+                    break
+        except Exception:
+            pass
+
         return self._system.getControllerState(idx)
+
+    def _pick_move_axis(self, hand: str, state) -> int:
+        """
+        Select the most likely locomotion axis pair for this controller.
+
+        Different controllers map stick/trackpad to different rAxis slots.
+        """
+        chosen = self._move_axis_idx[hand]
+        if chosen is not None:
+            return chosen
+
+        best_idx = 0
+        best_mag = -1.0
+        for i in range(5):
+            try:
+                ax = state.rAxis[i].x
+                ay = state.rAxis[i].y
+                mag = ax * ax + ay * ay
+                if mag > best_mag:
+                    best_mag = mag
+                    best_idx = i
+            except Exception:
+                continue
+
+        self._move_axis_idx[hand] = best_idx
+        print(f"[VRController] {hand} move axis selected: rAxis[{best_idx}]")
+        return best_idx
 
     # ------------------------------------------------------------------
     def get_thumbstick(self, hand: str = 'right') -> tuple[float, float]:
@@ -119,7 +226,27 @@ class VRControllerInput:
         try:
             ok, state = self._get_state(hand)
             if ok:
-                return (state.rAxis[0].x, state.rAxis[0].y)
+                i = self._pick_move_axis(hand, state)
+                x = state.rAxis[i].x
+                y = state.rAxis[i].y
+
+                # If the selected axis is flat, do a quick rescan.
+                if abs(x) < 0.01 and abs(y) < 0.01:
+                    best_idx = i
+                    best_mag = -1.0
+                    for j in range(5):
+                        ax = state.rAxis[j].x
+                        ay = state.rAxis[j].y
+                        mag = ax * ax + ay * ay
+                        if mag > best_mag:
+                            best_mag = mag
+                            best_idx = j
+                    if best_idx != i:
+                        self._move_axis_idx[hand] = best_idx
+                        x = state.rAxis[best_idx].x
+                        y = state.rAxis[best_idx].y
+
+                return (x, y)
         except Exception:
             pass
         return (0.0, 0.0)
@@ -131,7 +258,11 @@ class VRControllerInput:
         try:
             ok, state = self._get_state(hand)
             if ok:
-                return state.rAxis[1].x
+                # Trigger is often rAxis[1].x, but controller mappings vary.
+                vals = []
+                for i in range(1, 5):
+                    vals.append(state.rAxis[i].x)
+                return max(vals) if vals else 0.0
         except Exception:
             pass
         return 0.0
@@ -181,16 +312,36 @@ class VRPlayer(Entity):
         self.enabled = False  # enabled/disabled by the experiment state machine
         self._ctrl   = VRControllerInput()
 
+    @staticmethod
+    def _raw_key_axis(pos_key: str, neg_key: str) -> float:
+        """Read raw Panda key state as a fallback when held_keys misses focus."""
+        try:
+            mw = base.mouseWatcherNode
+            pos = 1.0 if mw and mw.isButtonDown(KeyboardButton.asciiKey(pos_key)) else 0.0
+            neg = 1.0 if mw and mw.isButtonDown(KeyboardButton.asciiKey(neg_key)) else 0.0
+            return pos - neg
+        except Exception:
+            return 0.0
+
     def update(self):
         if not self.enabled:
             return
 
         # --- keyboard ---
-        kb_x = held_keys["d"] - held_keys["a"]
-        kb_z = held_keys["w"] - held_keys["s"]
+        kb_x = (held_keys["d"] - held_keys["a"]) + self._raw_key_axis("d", "a")
+        kb_z = (held_keys["w"] - held_keys["s"]) + self._raw_key_axis("w", "s")
 
-        # --- controller thumbstick ---
-        ct_x, ct_y = self._ctrl.get_thumbstick() if self._ctrl.available else (0.0, 0.0)
+        # --- controller thumbstick (support both hands) ---
+        if self._ctrl.available:
+            lx, ly = self._ctrl.get_thumbstick('left')
+            rx, ry = self._ctrl.get_thumbstick('right')
+            # Use the stick with the stronger input so left/right bindings both work.
+            if (lx * lx + ly * ly) >= (rx * rx + ry * ry):
+                ct_x, ct_y = lx, ly
+            else:
+                ct_x, ct_y = rx, ry
+        else:
+            ct_x, ct_y = (0.0, 0.0)
 
         # Combine and clamp to [-1, 1]
         dx = max(-1.0, min(1.0, kb_x + ct_x))
@@ -199,17 +350,24 @@ class VRPlayer(Entity):
         if dx == 0 and dz == 0:
             return
 
-        # Project the HMD heading onto the horizontal plane
+        # Project the HMD heading onto the horizontal plane.
+        # In some VR pipelines camera basis may momentarily degenerate.
         fwd   = Vec3(camera.forward.x, 0, camera.forward.z)
         right = Vec3(camera.right.x,   0, camera.right.z)
+
+        if fwd.length_squared() < 1e-6 or right.length_squared() < 1e-6:
+            fwd = Vec3(self.forward.x, 0, self.forward.z)
+            right = Vec3(self.right.x, 0, self.right.z)
 
         if fwd.length_squared() > 0:
             fwd.normalize()
         if right.length_squared() > 0:
             right.normalize()
 
-        move = (fwd * dz + right * dx).normalized()
-        self.position += move * self.speed * time.dt
+        move = (fwd * dz + right * dx)
+        if move.length_squared() <= 1e-8:
+            return
+        self.position += move.normalized() * self.speed * time.dt
 
 
 # ---------------------------------------------------------------------------
@@ -248,13 +406,11 @@ class EyeTracker:
 
     def __init__(self):
         self._ok = False
-        try:
-            # Verify that panda3d-openvr is active
-            _ = base.openvr        # raises AttributeError if not loaded
+        if _ensure_openvr_initialized():
             self._ok = True
             print("[EyeTracker] Active — using HMD forward as gaze proxy.")
             print("[EyeTracker] See GUIDE.md §Eye Tracking to enable true gaze.")
-        except AttributeError:
+        else:
             print("[EyeTracker] WARNING: base.openvr not found.")
             print("[EyeTracker]   Did you call enable_vr() before Ursina()?")
 
