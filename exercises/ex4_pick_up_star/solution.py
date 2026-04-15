@@ -8,11 +8,19 @@ Builds on the Exercise 3 room by adding:
   - A reset function (press 'r') to restart the collection
 """
 
+import sys
 from ursina import *
 from ursina.prefabs.first_person_controller import FirstPersonController
 from ursina.models.procedural.cylinder import Cylinder
 
 app = Ursina()
+
+# macOS Retina fix: Ursina doesn't account for the 2x backing scale factor,
+# so camera.ui coordinates and text scale are off by ~1/20.
+if sys.platform == 'darwin':
+    UI_SCALE = 1 / 30
+else:
+    UI_SCALE = 1
 
 # ---------------------------------------------------------------------------
 # Coordinate system reminder
@@ -129,8 +137,8 @@ for pos in star_positions:
 score = 0
 score_text = Text(
     text=f'Stars: {score}/{len(stars)}',
-    position=(-0.85, 0.45),
-    scale=3,
+    position=(-0.85 * UI_SCALE, 0.45 * UI_SCALE),
+    scale=3 * UI_SCALE,
     parent=camera.ui,
     color=color.white,
 )
@@ -139,7 +147,7 @@ score_text = Text(
 win_text = Text(
     text='',
     origin=(0, 0),
-    scale=3,
+    scale=3 * UI_SCALE,
     color=color.green,
     parent=camera.ui,
 )

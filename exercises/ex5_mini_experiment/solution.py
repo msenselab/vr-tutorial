@@ -9,10 +9,19 @@ A complete mini-experiment demonstrating:
 """
 
 import csv
+import os
+import sys
 import time
 import random
 from ursina import *
 from ursina.prefabs.first_person_controller import FirstPersonController
+
+# macOS Retina fix: Ursina doesn't account for the 2x backing scale factor,
+# so camera.ui coordinates and text scale are off by ~1/30.
+if sys.platform == 'darwin':
+    UI_SCALE = 1 / 30
+else:
+    UI_SCALE = 1
 
 # --- Mock trigger (simulates EEG trigger) ---------------------------------
 TRIG_FIXATION = 1
@@ -21,9 +30,11 @@ TRIG_COLLECT = 3
 TRIG_TRIAL_END = 4
 
 
+exp_start_time = 0  # set when experiment starts
+
 def send_trigger(code):
     """Mock trigger — replace with LabJack/serial for real experiments."""
-    print(f"  [TRIGGER] code={code} at {time.time():.3f}")
+    print(f"  [TRIGGER] code={code} at {time.time() - exp_start_time:.3f}s")
 
 
 # --- Room building (reused from Exercises 2-3) ----------------------------
@@ -90,6 +101,9 @@ class Experiment(Entity):
     def __init__(self):
         super().__init__()
 
+        global exp_start_time
+        exp_start_time = time.time()
+
         # Build trial list: 2 conditions x 2 repeats = 4 trials
         self.trials = []
         for _ in range(2):
@@ -104,8 +118,10 @@ class Experiment(Entity):
         self.room_entities = []
         self.trial_start_time = 0
 
-        # CSV logging
-        self.csv_file = open('experiment_data.csv', 'w', newline='')
+        # CSV logging — save next to this script
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        csv_path = os.path.join(script_dir, 'experiment_data.csv')
+        self.csv_file = open(csv_path, 'w', newline='')
         self.csv_writer = csv.writer(self.csv_file)
         self.csv_writer.writerow([
             'trial', 'condition', 'n_stars', 'collected', 'duration_s',
@@ -119,16 +135,17 @@ class Experiment(Entity):
 
         # UI elements
         self.instruction_text = Text(
-            text='', origin=(0, 0), scale=2, parent=camera.ui,
+            text='', origin=(0, 0), scale=2 * UI_SCALE, parent=camera.ui,
         )
         self.fixation_text = Text(
-            text='', origin=(0, 0), scale=2, parent=camera.ui,
+            text='', origin=(0, 0), scale=2 * UI_SCALE, parent=camera.ui,
         )
         self.score_text = Text(
-            text='', position=(-0.85, 0.45), scale=2, parent=camera.ui,
+            text='', position=(-0.85 * UI_SCALE, 0.45 * UI_SCALE),
+            scale=2 * UI_SCALE, parent=camera.ui,
         )
         self.feedback_text = Text(
-            text='', origin=(0, 0), scale=2, parent=camera.ui,
+            text='', origin=(0, 0), scale=2 * UI_SCALE, parent=camera.ui,
         )
 
         # Start the first trial
