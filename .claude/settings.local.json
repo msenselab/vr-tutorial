@@ -3,7 +3,17 @@
     "allow": [
       "Bash(.venv/Scripts/python.exe -c \"import panda3d_gltf; print\\('panda3d_gltf version:', panda3d_gltf.__version__\\)\")",
       "Bash(.venv/Scripts/python.exe -c \"import panda3d; print\\('panda3d version:', panda3d.__version__\\)\")",
-      "Bash(.venv/Scripts/python.exe -c ' *)"
+      "Bash(.venv/Scripts/python.exe -c ' *)",
+      "Bash(.venv/Scripts/python.exe -c \"import ursina; print\\(ursina.__version__\\)\")",
+      "Bash(.venv/Scripts/pip show *)",
+      "Bash(python -c \"import ursina; print\\(ursina.__file__\\)\")",
+      "Bash(.venv/Scripts/python -c \"import ursina; print\\(ursina.__file__\\)\")",
+      "Bash(.venv/Scripts/pip.exe show *)",
+      "Bash(xargs grep *)",
+      "Bash(grep -n \"def destroy\\\\|def raycast\" D:/vr-tutorial/.venv/Lib/site-packages/ursina/*.py)",
+      "Bash(rm \"D:/vr-tutorial/exercises/ex7_maze_explorer/solution.py\" \"D:/vr-tutorial/exercises/ex7_maze_explorer/trajectory_plot.png\" \"D:/vr-tutorial/exercises/ex7_maze_explorer/visualize.ipynb\")",
+      "Bash(cp \"D:/vr-tutorial/ex7/maze_practice.csv\" \"D:/vr-tutorial/ex7/maze_practice.py\" \"D:/vr-tutorial/ex7/trajectory.csv\" \"D:/vr-tutorial/exercises/ex7_maze_explorer/\")",
+      "Bash(uv *)"
     ]
   }
 }
