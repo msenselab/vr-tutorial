@@ -10,6 +10,7 @@ Builds on the Exercise 3 room by adding:
 
 from ursina import *
 from ursina.prefabs.first_person_controller import FirstPersonController
+from ursina.models.procedural.cylinder import Cylinder
 
 app = Ursina()
 
@@ -87,11 +88,11 @@ lamp = Entity(
     model='sphere',
     scale=0.5,
     position=(3, 2.5, 4),
-    color=color.yellow,
+    color=color.orange,
 )
 
 pillar = Entity(
-    model='cylinder',
+    model=Cylinder(),
     scale=(1, 3, 1),
     position=(-6, 1.5, -6),
     color=color.light_gray,
@@ -102,8 +103,9 @@ pillar = Entity(
 # --- Sky & Lighting --------------------------------------------------------
 Sky()
 
-sun = DirectionalLight()
+sun = DirectionalLight(shadows=False)
 sun.look_at(Vec3(1, -1, -1))
+AmbientLight(color=color.rgba(0.3, 0.3, 0.3, 1))
 
 # --- Collectible stars -----------------------------------------------------
 # Three gold spheres placed around the room for the player to collect.
@@ -128,19 +130,18 @@ score = 0
 score_text = Text(
     text=f'Stars: {score}/{len(stars)}',
     position=(-0.85, 0.45),
-    scale=0.2,
+    scale=3,
     parent=camera.ui,
     color=color.white,
 )
 
 # --- Win text (hidden until all stars collected) ---------------------------
 win_text = Text(
-    text='Well done!',
+    text='',
     origin=(0, 0),
-    scale=0.2,
+    scale=3,
     color=color.green,
     parent=camera.ui,
-    enabled=False,
 )
 
 # --- Player ----------------------------------------------------------------
@@ -164,7 +165,7 @@ def update():
             print(f'Collected star! ({score}/{len(stars)})')
 
     if score == len(stars):
-        win_text.enabled = True
+        win_text.text = 'Well done!'
 
 
 def reset_game():
@@ -172,7 +173,7 @@ def reset_game():
     global score
     score = 0
     score_text.text = f'Stars: {score}/{len(stars)}'
-    win_text.enabled = False
+    win_text.text = ''
     for star in stars:
         star.enabled = True
     print('Game reset!')

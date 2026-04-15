@@ -140,8 +140,9 @@ pillar = Entity(
 # --- TODO 5 (optional): Add lighting --------------------------------------
 # A directional light adds depth and makes textures more visible.
 #
-# sun = DirectionalLight()
+# sun = DirectionalLight(shadows=False)
 # sun.look_at(Vec3(1, -1, -1))
+# AmbientLight(color=color.rgba(0.3, 0.3, 0.3, 1))
 
 # --- Player ----------------------------------------------------------------
 player = FirstPersonController()

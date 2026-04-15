@@ -10,6 +10,7 @@ Builds on the Exercise 2 room by adding:
 
 from ursina import *
 from ursina.prefabs.first_person_controller import FirstPersonController
+from ursina.models.procedural.cylinder import Cylinder
 
 app = Ursina()
 
@@ -96,7 +97,7 @@ lamp = Entity(
 
 # Pillar — gray cylinder in the back-left corner
 pillar = Entity(
-    model='cylinder',
+    model=Cylinder(),
     scale=(1, 3, 1),
     position=(-6, 1.5, -6),
     color=color.light_gray,
@@ -119,8 +120,9 @@ collectible = Entity(
 
 # --- Lighting --------------------------------------------------------------
 # A directional light improves depth perception and makes textures pop.
-sun = DirectionalLight()
+sun = DirectionalLight(shadows=False)
 sun.look_at(Vec3(1, -1, -1))
+AmbientLight(color=color.rgba(0.3, 0.3, 0.3, 1))
 
 # --- Player ----------------------------------------------------------------
 player = FirstPersonController()
