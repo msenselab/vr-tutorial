@@ -6,7 +6,7 @@ weight: 3
 
 ## Project Overview
 
-[MazeWalker-Py](https://github.com/strongway/mazewalker-py) is a maze-navigation experiment for EEG and behavioural research. Participants navigate virtual mazes using a gamepad while brain activity is recorded. It is built with Ursina, pygame, and the same architectural patterns you learned in this tutorial.
+[MazeWalker-Py](https://github.com/msenselab/MazeWalker-Py) is a maze-navigation experiment for EEG and behavioural research. Participants navigate virtual mazes using a gamepad while brain activity is recorded. It is built with Ursina, pygame, and the same architectural patterns you learned in this tutorial.
 
 The capstone module connects everything you have built to a real research codebase. The goal is not to memorize the code but to recognize familiar patterns and understand how they scale.
 

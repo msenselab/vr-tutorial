@@ -1157,7 +1157,7 @@ Runner Track
 
 Explore and configure:
 
-- Read through MazeWalker-Py code on GitHub
+- Read through [MazeWalker-Py](https://github.com/msenselab/MazeWalker-Py) on GitHub
 - Change `config.yaml` parameters (maze size, time limits)
 - Run the experiment and examine output data
 
@@ -1473,7 +1473,7 @@ This Workshop
 - GitHub: `github.com/msenselab/vr-tutorial`
 - All exercises with templates and solutions
 - Slides available online
-- MazeWalker-Py source code and examples
+- MazeWalker-Py: `github.com/msenselab/MazeWalker-Py`
 - PsychoPy-to-Ursina migration notes
 
 <!--
