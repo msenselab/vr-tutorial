@@ -15,12 +15,19 @@ Controls:
 
 import atexit
 import csv
+import sys
 import time as pytime
 import random
 from datetime import datetime
 from pathlib import Path
 from ursina import *
 from ursina.prefabs.first_person_controller import FirstPersonController
+
+# macOS Retina fix: Ursina doesn't account for the 2x backing scale factor
+if sys.platform == 'darwin':
+    UI_SCALE = 1 / 30
+else:
+    UI_SCALE = 1
 
 _RUN_DIR = Path(__file__).parent / f"run_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
 _RUN_DIR.mkdir(parents=True, exist_ok=True)
@@ -204,8 +211,8 @@ class Practice(Entity):
         Sky()
         AmbientLight(color=color.rgba(1, 1, 1, 1))
 
-        self.msg_text   = Text(text='', origin=(0, 0),          scale=2, parent=camera.ui)
-        self.score_text = Text(text='', position=(-0.85, 0.45), scale=2, parent=camera.ui)
+        self.msg_text   = Text(text='', origin=(0, 0),          scale=2 * UI_SCALE, parent=camera.ui)
+        self.score_text = Text(text='', position=(-0.85 * UI_SCALE, 0.45 * UI_SCALE), scale=2 * UI_SCALE, parent=camera.ui)
 
         self.show_instruction()
 
