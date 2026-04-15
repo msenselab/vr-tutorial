@@ -19,56 +19,80 @@ Both roles work through the same exercises; depth of engagement differs.
 
 | Time       | Module                              | Duration |
 |------------|-------------------------------------|----------|
-| 09:00      | M1: Welcome & Setup Check           | 20 min   |
-| 09:20      | M2: Ursina Fundamentals             | 45 min   |
-| 10:05      | Break                               | 20 min   |
-| 10:25      | M3: Interaction & Input             | 40 min   |
-| 11:05      | M4: Experiment Paradigm Design      | 45 min   |
-| 11:50      | Q&A & Hands-on                      | 10 min   |
-| 12:00      | Lunch                               | 60 min   |
-| 13:00      | M5: Capstone — MazeWalker-Py        | 45 min   |
-| 13:45      | M6: VR Roadmap                      | 25 min   |
-| 14:10      | Break                               | 20 min   |
-| 14:30      | M7: Beyond Primitives (3D Models)   | 30 min   |
-| 15:00      | Wrap-up & Homework                  | 15 min   |
+| 10:00      | M1: Welcome & Setup Check           | 20 min   |
+| 10:20      | M2: Ursina Fundamentals             | 45 min   |
+| 11:05      | Break                               | 20 min   |
+| 11:25      | M3: Interaction & Input             | 40 min   |
+| 12:05      | M4: Experiment Paradigm Design      | 45 min   |
+| 12:50      | Q&A & Hands-on                      | 10 min   |
+| 13:00      | Lunch                               | 60 min   |
+| 14:00      | M5: Capstone — MazeWalker-Py        | 45 min   |
+| 14:45      | M6: VR Roadmap                      | 25 min   |
+| 15:10      | Break                               | 20 min   |
+| 15:30      | M7: Beyond Primitives (3D Models)   | 30 min   |
+| 16:00      | Wrap-up & Homework                  | 15 min   |
 
 Total: ~6 hours including breaks and lunch.
 
 ## Pre-Workshop Setup
 
-Please complete these steps **before** the workshop.
+Please complete these steps **before** the workshop. See also `setup-guide.pdf` for detailed instructions with screenshots.
 
-### 1. Install Python 3.11 and uv
+### Quick setup (recommended)
 
-Download **Python 3.11** from [python.org](https://www.python.org/downloads/release/python-3119/) (not 3.12+ — panda3d requires 3.11). Then install [uv](https://docs.astral.sh/uv/getting-started/installation/) (a fast Python package manager):
+Run the setup script from the repository root — it installs `uv`, Python 3.11, creates the virtual environment, and verifies everything in one step.
 
-```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh   # macOS/Linux
-# or: pip install uv
-```
-
-### 2. Create a virtual environment
+**macOS / Linux:**
 
 ```bash
 cd vr-tutorial
-uv venv
-source .venv/bin/activate    # macOS/Linux
-.venv\Scripts\activate       # Windows
+bash setup.sh
+source .venv/bin/activate
 ```
 
-### 3. Install dependencies
+**Windows (PowerShell):**
 
-```bash
-uv pip install ursina pygame
+```powershell
+cd vr-tutorial
+Set-ExecutionPolicy -Scope Process Bypass
+.\setup.ps1
+.\.venv\Scripts\Activate.ps1
 ```
 
-### 4. Verify your setup
+### Manual setup
 
-```bash
-python exercises/ex1_hello_ursina/hello_cube.py
-```
+If you prefer to run each step yourself:
 
-You should see a window with a spinning cube. If so, you are ready.
+1. **Install uv** — a fast Python package manager ([docs](https://docs.astral.sh/uv/getting-started/installation/)):
+
+    ```bash
+    curl -LsSf https://astral.sh/uv/install.sh | sh          # macOS/Linux
+    powershell -c "irm https://astral.sh/uv/install.ps1 | iex"  # Windows
+    ```
+
+2. **Create a virtual environment** (Python 3.11 is required — panda3d does not yet support 3.12+):
+
+    ```bash
+    cd vr-tutorial
+    uv python install 3.11
+    uv venv --python 3.11
+    source .venv/bin/activate       # macOS/Linux
+    .\.venv\Scripts\Activate.ps1    # Windows
+    ```
+
+3. **Install dependencies**:
+
+    ```bash
+    uv pip install -e .
+    ```
+
+4. **Verify**:
+
+    ```bash
+    python exercises/ex1_hello_ursina/hello_cube.py
+    ```
+
+    You should see a window with a spinning cube. If so, you are ready.
 
 ## Repository Structure
 
