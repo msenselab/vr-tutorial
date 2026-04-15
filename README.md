@@ -249,9 +249,9 @@ Mouse look is not used in VR — the headset provides head orientation automatic
 
 | Script | Purpose |
 |--------|---------|
-| `vr_pimax/ex5_vr.py` | Mini experiment — demo of 4-trial star collection in VR |
-| `vr_pimax/ex7_vr.py` | **Main experiment** — procedurally generated maze, trajectory + gaze logging |
-| `vr_pimax/input_keyboard_controller_probe.py` | Diagnostic tool — verifies keyboard and controller input are working |
+| `vr_pimax/maze_experiment.py` | **Main experiment** — procedurally generated maze, trajectory + gaze logging |
+| `vr_pimax/demo.py` | Demo — 4-trial star collection, useful for testing the VR setup |
+| `vr_pimax/probe.py` | Diagnostic tool — verifies keyboard and controller input are working |
 | `vr_pimax/vr_utils.py` | Shared VR utilities (`enable_vr`, `VRPlayer`, `VRControllerInput`, `EyeTracker`) |
 
 Run from the repo root (so relative imports work):
@@ -259,7 +259,7 @@ Run from the repo root (so relative imports work):
 ```bash
 cd vr-tutorial
 .venv\Scripts\activate
-python vr_pimax/ex7_vr.py
+python vr_pimax/maze_experiment.py
 ```
 
 ### Output Files
