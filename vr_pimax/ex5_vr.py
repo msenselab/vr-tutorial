@@ -196,7 +196,7 @@ class Experiment(Entity):
         self.score         = 0
 
         self.player.enabled  = True
-        self.player.position = Vec3(0, 0, 0)
+        self.player.teleport_to(Vec3(0, 1.0, 0))
         # [VR-3] mouse.locked = True  <- removed; HMD provides look direction
 
         self.score_text.text   = f"Stars: 0/{trial['n_stars']}"

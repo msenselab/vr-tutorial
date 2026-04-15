@@ -107,11 +107,10 @@ class VRControllerInput:
         self._last_reconnect_try = 0.0
         self._reconnect_interval = 2.0
         self._indices = None          # cached controller device indices
-        self._move_axis_idx = {'left': None, 'right': None}
         self._trigger_prev = {'left': 0.0, 'right': 0.0}
         self._state_cache = {'left': (False, None), 'right': (False, None)}
         self._state_next_poll = {'left': 0.0, 'right': 0.0}
-        self._state_poll_interval = 0.25
+        self._state_poll_interval = 0.016  # ~60 Hz; getControllerState is a shared-memory read
 
         self._initialize_runtime(log_prefix=True)
 
@@ -239,65 +238,20 @@ class VRControllerInput:
 
         return self._system.getControllerState(idx)
 
-    def _pick_move_axis(self, hand: str, state) -> int:
-        """
-        Select the most likely locomotion axis pair for this controller.
-
-        Different controllers map stick/trackpad to different rAxis slots.
-        """
-        chosen = self._move_axis_idx[hand]
-        if chosen is not None:
-            return chosen
-
-        best_idx = 0
-        best_mag = -1.0
-        for i in range(5):
-            try:
-                ax = state.rAxis[i].x
-                ay = state.rAxis[i].y
-                mag = ax * ax + ay * ay
-                if mag > best_mag:
-                    best_mag = mag
-                    best_idx = i
-            except Exception:
-                continue
-
-        self._move_axis_idx[hand] = best_idx
-        print(f"[VRController] {hand} move axis selected: rAxis[{best_idx}]")
-        return best_idx
-
     # ------------------------------------------------------------------
     def get_thumbstick(self, hand: str = 'right') -> tuple[float, float]:
         """
         Return (x, y) thumbstick values in range [-1, 1].
         x = strafe left/right,  y = forward (+) / back (-)
+        Reads rAxis[0] which is the thumbstick on Pimax Crystal via SteamVR.
+        rAxis[1] is the trigger (0..1) and must never be used for locomotion.
         """
         if not self._ok:
             return (0.0, 0.0)
         try:
             ok, state = self._poll_state(hand)
             if ok:
-                i = self._pick_move_axis(hand, state)
-                x = state.rAxis[i].x
-                y = state.rAxis[i].y
-
-                # If the selected axis is flat, do a quick rescan.
-                if abs(x) < 0.01 and abs(y) < 0.01:
-                    best_idx = i
-                    best_mag = -1.0
-                    for j in range(5):
-                        ax = state.rAxis[j].x
-                        ay = state.rAxis[j].y
-                        mag = ax * ax + ay * ay
-                        if mag > best_mag:
-                            best_mag = mag
-                            best_idx = j
-                    if best_idx != i:
-                        self._move_axis_idx[hand] = best_idx
-                        x = state.rAxis[best_idx].x
-                        y = state.rAxis[best_idx].y
-
-                return (x, y)
+                return (state.rAxis[0].x, state.rAxis[0].y)
         except Exception:
             pass
         return (0.0, 0.0)
@@ -322,7 +276,9 @@ class VRControllerInput:
         """
         Return True on the frame the trigger crosses the press threshold.
         Must be called exactly once per frame for correct edge detection.
+        Forces a fresh state read so quick presses are never missed.
         """
+        self._poll_state(hand, force=True)   # bypass cache — trigger needs per-frame accuracy
         prev = self._trigger_prev[hand]
         curr = self.get_trigger(hand)
         self._trigger_prev[hand] = curr
@@ -355,7 +311,7 @@ class VRPlayer(Entity):
     def __init__(self, speed: float = 5.0, **kwargs):
         super().__init__(
             model=None,
-            collider="capsule",
+            collider=None,   # no Panda3D physics collider; AABB handled manually
             **kwargs,
         )
         self.speed   = speed
@@ -364,20 +320,17 @@ class VRPlayer(Entity):
         self._ctrl   = VRControllerInput()
         self._collision_rects: list[tuple[float, float, float, float]] = []
         self._collision_radius = 0.45
-        self._enable_snap_turn = False
+        self._enable_snap_turn = True
         self._snap_turn_angle = 30.0
         self._snap_turn_deadzone = 0.6
         self._snap_turn_latch = False
         self._last_safe_pos = Vec3(0, 0, 0)
         self._ctrl_available_cached = self._ctrl.available
-        self._ctrl_poll_interval = 0.25
+        self._ctrl_poll_interval = 0.25   # availability check only — not state refresh rate
         self._ctrl_next_poll_t = 0.0
         self._stick_x_sign = 1.0
         self._stick_y_sign = 1.0
-        try:
-            self._ctrl.set_state_poll_interval(self._ctrl_poll_interval)
-        except Exception:
-            pass
+        # State poll interval (thumbstick/trigger) stays at VRControllerInput default (0.016 s)
 
     @staticmethod
     def _move_vr_rig(delta: Vec3) -> bool:
@@ -416,12 +369,9 @@ class VRPlayer(Entity):
         self._collision_radius = radius
 
     def set_controller_poll_interval(self, seconds: float) -> None:
-        """Set controller availability polling interval used in update()."""
+        """Set controller *availability* polling interval used in update().
+        Does not affect thumbstick/trigger state refresh rate."""
         self._ctrl_poll_interval = max(0.05, float(seconds))
-        try:
-            self._ctrl.set_state_poll_interval(self._ctrl_poll_interval)
-        except Exception:
-            pass
 
     def set_locomotion_signs(self, x_sign: float = 1.0, y_sign: float = 1.0) -> None:
         """Set sign multipliers for controller locomotion axes."""
@@ -510,12 +460,17 @@ class VRPlayer(Entity):
 
     @staticmethod
     def _get_head_world_pos() -> Vec3:
-        """Return HMD/camera world position used as collision reference."""
+        """Return HMD world position from the openvr anchor node (world space)."""
         try:
-            p = camera.world_position
-            return Vec3(p.x, p.y, p.z)
+            hmd = base.openvr.hmd_anchor
+            pos = hmd.getPos(render)
+            return Vec3(pos.x, pos.y, pos.z)
         except Exception:
-            return Vec3(0, 0, 0)
+            try:
+                p = camera.world_position
+                return Vec3(p.x, p.y, p.z)
+            except Exception:
+                return Vec3(0, 0, 0)
 
     def _controller_available(self, force: bool = False) -> bool:
         """Poll controller availability at low frequency to avoid per-frame stalls."""
@@ -553,19 +508,9 @@ class VRPlayer(Entity):
         kb_x = (held_keys["d"] - held_keys["a"]) + self._raw_key_axis("d", "a")
         kb_z = (held_keys["w"] - held_keys["s"]) + self._raw_key_axis("w", "s")
 
-        # --- controller thumbstick ---
+        # --- controller thumbstick (left = locomotion, right = snap turn only) ---
         if self._controller_available():
-            left_x, left_y = self._ctrl.get_thumbstick('left')
-            right_x, right_y = self._ctrl.get_thumbstick('right')
-
-            # Use whichever stick is actually being pushed.
-            left_mag = left_x * left_x + left_y * left_y
-            right_mag = right_x * right_x + right_y * right_y
-            if right_mag > left_mag:
-                ct_x, ct_y = right_x, right_y
-            else:
-                ct_x, ct_y = left_x, left_y
-
+            ct_x, ct_y = self._ctrl.get_thumbstick('left')
             ct_x *= self._stick_x_sign
             ct_y *= self._stick_y_sign
         else:
