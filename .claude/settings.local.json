@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(.venv/Scripts/python.exe -c \"import panda3d_gltf; print\\('panda3d_gltf version:', panda3d_gltf.__version__\\)\")",
+      "Bash(.venv/Scripts/python.exe -c \"import panda3d; print\\('panda3d version:', panda3d.__version__\\)\")",
+      "Bash(.venv/Scripts/python.exe -c ' *)"
+    ]
+  }
+}

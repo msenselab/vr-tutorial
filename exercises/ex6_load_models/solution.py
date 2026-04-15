@@ -53,8 +53,13 @@ def load_animated_glb(filepath):
     Same PBR-stripping as load_glb, but returns an Actor that can play
     embedded animations via actor.loop(name) / actor.play(name).
     """
-    from panda3d.core import TextureAttrib
-    actor = Actor(str(filepath))
+    from panda3d.core import TextureAttrib, Filename
+    # Filename.fromOsSpecific converts Windows backslash paths to Panda3D's
+    # internal Unix-style format (e.g. D:/foo -> /d/foo).  Passing a raw
+    # Windows path with backslashes to Actor() mangles escape sequences like
+    # \v, \a, \e, \m, causing a "Could not load Actor model" IOError.
+    panda_path = str(Filename.fromOsSpecific(str(filepath).replace('\\', '/')))
+    actor = Actor(panda_path)
     for np in actor.findAllMatches('**/+GeomNode'):
         np.clearMaterial()
         np.setShaderOff(2)
