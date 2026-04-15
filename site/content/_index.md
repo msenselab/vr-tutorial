@@ -14,7 +14,7 @@ This tutorial teaches psychology and neuroscience researchers to build interacti
 - Build 3D environments with the [Ursina](https://www.ursinaengine.org/) game engine
 - Handle input devices (keyboard, mouse, gamepad) via [pygame](https://www.pygame.org/)
 - Design experiments with trial sequencing, data logging, and EEG triggers
-- Understand a production experiment codebase ([MazeWalker-Py](https://github.com/strongway/mazewalker-py))
+- Understand a production experiment codebase ([MazeWalker-Py](https://github.com/msenselab/MazeWalker-Py))
 
 ### Who Is This For?
 
@@ -29,16 +29,20 @@ Both roles work through the same exercises; depth of engagement differs.
 
 | Time  | Module                              | Duration |
 |-------|-------------------------------------|----------|
-| 09:00 | Module 1: Welcome & Setup Check     | 20 min   |
-| 09:20 | Module 2: Ursina Fundamentals       | 45 min   |
-| 10:05 | Break                               | 15 min   |
-| 10:20 | Module 3: Adding Interaction & Input | 40 min   |
-| 11:00 | Module 4: Experiment Paradigm Design | 45 min   |
-| 11:45 | Break                               | 15 min   |
-| 12:00 | Module 5: Capstone -- MazeWalker-Py | 40 min   |
-| 12:40 | Module 6: VR Roadmap & Wrap-up      | 15 min   |
+| 09:00 | M1: Welcome & Setup Check           | 20 min   |
+| 09:20 | M2: Ursina Fundamentals             | 45 min   |
+| 10:05 | Break                               | 20 min   |
+| 10:25 | M3: Interaction & Input             | 40 min   |
+| 11:05 | M4: Experiment Paradigm Design      | 45 min   |
+| 11:50 | Q&A & Hands-on                      | 10 min   |
+| 12:00 | Lunch                               | 60 min   |
+| 13:00 | M5: Capstone -- MazeWalker-Py       | 45 min   |
+| 13:45 | M6: VR Roadmap                      | 25 min   |
+| 14:10 | Break                               | 20 min   |
+| 14:30 | M7: Beyond Primitives (3D Models)   | 30 min   |
+| 15:00 | Wrap-up & Homework                  | 15 min   |
 
-Total: approximately 4 hours including breaks.
+Total: approximately 6 hours including breaks and lunch.
 
 ## Getting Started
 

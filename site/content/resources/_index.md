@@ -18,7 +18,7 @@ weight: 5
 | Resource | URL | Description |
 |----------|-----|-------------|
 | Tutorial Repository | [github.com/msenselab/vr-tutorial](https://github.com/msenselab/vr-tutorial) | All exercises, slides, and this site |
-| MazeWalker-Py | [github.com/strongway/mazewalker-py](https://github.com/strongway/mazewalker-py) | Production experiment codebase (capstone) |
+| MazeWalker-Py | [github.com/msenselab/MazeWalker-Py](https://github.com/msenselab/MazeWalker-Py) | Production experiment codebase (capstone) |
 
 ## VR in Research
 
