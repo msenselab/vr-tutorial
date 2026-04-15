@@ -8,7 +8,7 @@ app = Ursina()
 MODELS_DIR = Path(__file__).resolve().parent.parent / 'assets' / 'models'
 
 angel = Entity(
-    model=load_model('Angel', path=MODELS_DIR),
+    model=load_model('troy', path=MODELS_DIR),
     scale=2,
     position=(0, 0, 0),
     rotation_y=180,

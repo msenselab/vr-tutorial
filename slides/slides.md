@@ -43,26 +43,26 @@ Morning
 
 ::left::
 
-- **09:00** M1: Welcome & Setup Check
-- **09:20** M2: Ursina Fundamentals
-- **10:05** Break (20 min)
-- **10:25** M3: Interaction & Input
-- **11:05** M4: Experiment Paradigm Design
-- **11:50** Q&A & Hands-on
-- **12:00** Lunch (60 min)
+- **10:00** M1: Welcome & Setup Check
+- **10:20** M2: Ursina Fundamentals
+- **11:05** Break (20 min)
+- **11:25** M3: Interaction & Input
+- **12:05** M4: Experiment Paradigm Design
+- **12:50** Q&A & Hands-on
+- **13:00** Lunch (60 min)
 
 ::right-title::
 Afternoon
 
 ::right::
 
-- **13:00** M5: Capstone -- MazeWalker-Py
-- **13:45** M6: VR Roadmap
-- **14:10** Break (20 min)
-- **14:30** M7: Beyond Primitives
-- **15:00** Wrap-up & Homework
-- **15:30** break (20 min)
-- **15:50** Unity VR in Research (Artyom)
+- **14:00** M5: Capstone -- MazeWalker-Py
+- **14:45** M6: VR Roadmap
+- **15:10** Break (20 min)
+- **15:30** M7: Beyond Primitives
+- **16:00** Wrap-up & Homework
+- **16:30** break (20 min)
+- **16:50** Unity VR in Research (Artyom)
 
 **Two tracks**: *Builders* (design & code) · *Runners* (configure & operate)
 

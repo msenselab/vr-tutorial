@@ -3,15 +3,15 @@
 Demonstrates loading external GLB models into an Ursina scene:
   - Loading .glb files with Entity(model=...)
   - Positioning, scaling, and rotating imported models
-  - Animating a model (swing rocking via sine wave)
+  - Animating a model (Hulk boxing via embedded skeletal animation)
   - Proximity-based highlighting
   - Dynamic scaling with keyboard input
 """
 
-import math
 from pathlib import Path
 from ursina import *
 from ursina.prefabs.first_person_controller import FirstPersonController
+from direct.actor.Actor import Actor
 
 app = Ursina()
 
@@ -45,6 +45,31 @@ def load_glb(name, path):
                     if 'Base Color' not in tex.getName():
                         np.setTextureOff(stage, 2)
     return mdl
+
+
+def load_animated_glb(filepath):
+    """Load a GLB with skeletal animations via Panda3D Actor.
+
+    Same PBR-stripping as load_glb, but returns an Actor that can play
+    embedded animations via actor.loop(name) / actor.play(name).
+    """
+    from panda3d.core import TextureAttrib
+    actor = Actor(str(filepath))
+    for np in actor.findAllMatches('**/+GeomNode'):
+        np.clearMaterial()
+        np.setShaderOff(2)
+        np.setLightOff(2)
+        node = np.node()
+        for i in range(node.getNumGeoms()):
+            ta = node.getGeomState(i).getAttrib(TextureAttrib)
+            if ta:
+                for j in range(ta.getNumOnStages()):
+                    stage = ta.getOnStage(j)
+                    tex = ta.getOnTexture(stage)
+                    if 'Base Color' not in tex.getName():
+                        np.setTextureOff(stage, 2)
+    return actor
+
 
 # Resolve the models directory relative to this script (works from any cwd)
 MODELS_DIR = Path(__file__).resolve().parent.parent / 'assets' / 'models'
@@ -85,17 +110,21 @@ AmbientLight(color=color.rgba(0.3, 0.3, 0.3, 1))
 # --- Load 3D models -------------------------------------------------------
 
 angel = Entity(
-    model=load_glb('Angel', path=MODELS_DIR),
+    model=load_glb('troy', path=MODELS_DIR),
     scale=2,
     position=(0, 2, 5),
 )
 
-swing = Entity(
-    model=load_glb('Swing', path=MODELS_DIR),
+hulk = Entity(
     scale=2,
-    position=(0, 2, -3),
+    position=(0, 0, 1.5),
     rotation_y=180,
 )
+hulk_actor = load_animated_glb(MODELS_DIR / 'hulk-boxing.glb')
+hulk_actor.reparent_to(hulk)
+print('Hulk animations:', hulk_actor.getAnimNames())
+if hulk_actor.getAnimNames():
+    hulk_actor.loop(hulk_actor.getAnimNames()[0])
 
 # --- HUD -------------------------------------------------------------------
 info_text = Text(
@@ -110,7 +139,7 @@ info_text = Text(
 player = FirstPersonController()
 player.gravity = 0
 player.cursor.visible = False
-player.position = (3, 1, -1)    # near the swing
+player.position = (3, 1, -1)    # near the hulk
 player.rotation_y = -45          # face the angel statue
 
 # --- Per-frame logic -------------------------------------------------------
@@ -118,12 +147,9 @@ player.rotation_y = -45          # face the angel statue
 HIGHLIGHT_DISTANCE = 3
 
 def update():
-    # Animate the swing: rock back and forth
-    swing.rotation_z = math.sin(time.time() * 2) * 15
-
     # Proximity highlighting
     near_name = ''
-    for name, obj in [('Angel', angel), ('Swing', swing)]:
+    for name, obj in [('Troy', angel), ('Hulk-Boxing', hulk)]:
         d = distance(player.position, obj.position)
         if d < HIGHLIGHT_DISTANCE:
             obj.color = color.yellow
