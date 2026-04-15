@@ -141,8 +141,9 @@ class Experiment(Entity):
             'gaze_x', 'gaze_y', 'gaze_z',   # [VR-5]
         ])
 
-        # [VR-2] VRPlayer: movement without mouse look
-        self.player = VRPlayer(speed=5.0)
+        # [VR-2] VRPlayer: movement without mouse look.
+        # Bumped for VR comfort with 4-unit room scale.
+        self.player = VRPlayer(speed=9.0)
 
         # UI — head-locked 2D overlay (works in VR as screen-space HUD)
         self.instruction_text = Text(text='', origin=(0, 0),          scale=2, parent=camera.ui)

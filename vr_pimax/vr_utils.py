@@ -16,6 +16,8 @@ Public API
   EyeTracker                — gaze direction sampler with graceful fallback
 """
 
+import math
+
 from panda3d.core import ConfigVariableString, KeyboardButton, loadPrcFileData
 from ursina import *
 
@@ -102,34 +104,83 @@ class VRControllerInput:
         self._system  = None
         self._ovr     = None
         self._owns_runtime = False
+        self._last_reconnect_try = 0.0
+        self._reconnect_interval = 2.0
         self._indices = None          # cached controller device indices
         self._move_axis_idx = {'left': None, 'right': None}
         self._trigger_prev = {'left': 0.0, 'right': 0.0}
+        self._state_cache = {'left': (False, None), 'right': (False, None)}
+        self._state_next_poll = {'left': 0.0, 'right': 0.0}
+        self._state_poll_interval = 0.25
 
-        # If the VR layer is already active, reuse it.
-        if _ensure_openvr_initialized():
-            try:
+        self._initialize_runtime(log_prefix=True)
+
+    def _initialize_runtime(self, log_prefix: bool = False) -> bool:
+        """Try to attach to SteamVR, preferring the active panda3d-openvr runtime."""
+        try:
+            if _ensure_openvr_initialized():
                 import openvr as _ovr
                 self._ovr = _ovr
                 self._system = base.openvr.vr_system
                 self._ok = True
-                print("[VRController] Ready (reusing base.openvr.vr_system).")
-                return
-            except Exception:
-                pass
+                if log_prefix:
+                    print("[VRController] Ready (reusing base.openvr.vr_system).")
+                return True
+        except Exception:
+            pass
 
         try:
             import openvr as _ovr
-            self._ovr    = _ovr
+            self._ovr = _ovr
             _ovr.init(_ovr.VRApplication_Scene)
             self._owns_runtime = True
             self._system = _ovr.VRSystem()
-            self._ok     = True
-            print("[VRController] Ready (direct openvr init).")
+            self._ok = True
+            if log_prefix:
+                print("[VRController] Ready (direct openvr init).")
+            return True
         except ImportError:
-            print("[VRController] openvr package not installed  →  pip install openvr")
+            if log_prefix:
+                print("[VRController] openvr package not installed  →  pip install openvr")
         except Exception as e:
-            print(f"[VRController] Init failed: {e}")
+            if log_prefix:
+                print(f"[VRController] Init failed: {e}")
+
+        self._ok = False
+        return False
+
+    def _maybe_reconnect(self) -> None:
+        if self._ok:
+            return
+        now = time.time()
+        if (now - self._last_reconnect_try) < self._reconnect_interval:
+            return
+        self._last_reconnect_try = now
+        if self._initialize_runtime(log_prefix=False):
+            print("[VRController] Reconnected.")
+
+    def poll_connection(self) -> bool:
+        """Low-frequency reconnect entry point for external update loops."""
+        self._maybe_reconnect()
+        return self._ok
+
+    def set_reconnect_interval(self, seconds: float) -> None:
+        """Set minimum retry interval for reconnect attempts."""
+        self._reconnect_interval = max(0.1, float(seconds))
+
+    def set_state_poll_interval(self, seconds: float) -> None:
+        """Set minimum interval for controller state refreshes."""
+        self._state_poll_interval = max(0.05, float(seconds))
+
+    def _poll_state(self, hand: str, force: bool = False):
+        """Refresh and cache controller state at a bounded frequency."""
+        if not self._ok:
+            return False, None
+        now = time.perf_counter()
+        if force or now >= self._state_next_poll[hand]:
+            self._state_cache[hand] = self._get_state(hand)
+            self._state_next_poll[hand] = now + self._state_poll_interval
+        return self._state_cache[hand]
 
     def __del__(self):
         if self._owns_runtime:
@@ -224,7 +275,7 @@ class VRControllerInput:
         if not self._ok:
             return (0.0, 0.0)
         try:
-            ok, state = self._get_state(hand)
+            ok, state = self._poll_state(hand)
             if ok:
                 i = self._pick_move_axis(hand, state)
                 x = state.rAxis[i].x
@@ -256,7 +307,7 @@ class VRControllerInput:
         if not self._ok:
             return 0.0
         try:
-            ok, state = self._get_state(hand)
+            ok, state = self._poll_state(hand)
             if ok:
                 # Trigger is often rAxis[1].x, but controller mappings vary.
                 vals = []
@@ -311,6 +362,140 @@ class VRPlayer(Entity):
         self.gravity = 0      # disable gravity; VR locomotion is comfort-first
         self.enabled = False  # enabled/disabled by the experiment state machine
         self._ctrl   = VRControllerInput()
+        self._collision_rects: list[tuple[float, float, float, float]] = []
+        self._collision_radius = 0.45
+        self._enable_snap_turn = False
+        self._snap_turn_angle = 30.0
+        self._snap_turn_deadzone = 0.6
+        self._snap_turn_latch = False
+        self._last_safe_pos = Vec3(0, 0, 0)
+        self._ctrl_available_cached = self._ctrl.available
+        self._ctrl_poll_interval = 0.25
+        self._ctrl_next_poll_t = 0.0
+        self._stick_x_sign = 1.0
+        self._stick_y_sign = 1.0
+        try:
+            self._ctrl.set_state_poll_interval(self._ctrl_poll_interval)
+        except Exception:
+            pass
+
+    @staticmethod
+    def _move_vr_rig(delta: Vec3) -> bool:
+        """Move OpenVR tracking space when available (true VR locomotion)."""
+        try:
+            ts = base.openvr.tracking_space
+            ts.setPos(ts.getPos() + delta)
+            return True
+        except Exception:
+            return False
+
+    @staticmethod
+    def _get_hmd_offset() -> Vec3:
+        """Return the current HMD offset inside tracking space if available."""
+        try:
+            hmd = base.openvr.hmd_anchor
+            pos = hmd.getPos()
+            return Vec3(pos.x, pos.y, pos.z)
+        except Exception:
+            return Vec3(0, 0, 0)
+
+    def teleport_to(self, world_pos: Vec3) -> None:
+        """Place the player and align tracking space so the HMD appears at world_pos."""
+        self.position = Vec3(world_pos.x, world_pos.y, world_pos.z)
+        self._last_safe_pos = Vec3(world_pos.x, world_pos.y, world_pos.z)
+        try:
+            tracking_space = base.openvr.tracking_space
+            hmd_offset = self._get_hmd_offset()
+            tracking_space.setPos(world_pos - hmd_offset)
+        except Exception:
+            pass
+
+    def set_collision_rects(self, rects: list[tuple[float, float, float, float]], radius: float = 0.45) -> None:
+        """Set wall rectangles (x, z, sx, sz) used to block movement."""
+        self._collision_rects = list(rects)
+        self._collision_radius = radius
+
+    def set_controller_poll_interval(self, seconds: float) -> None:
+        """Set controller availability polling interval used in update()."""
+        self._ctrl_poll_interval = max(0.05, float(seconds))
+        try:
+            self._ctrl.set_state_poll_interval(self._ctrl_poll_interval)
+        except Exception:
+            pass
+
+    def set_locomotion_signs(self, x_sign: float = 1.0, y_sign: float = 1.0) -> None:
+        """Set sign multipliers for controller locomotion axes."""
+        self._stick_x_sign = 1.0 if x_sign >= 0 else -1.0
+        self._stick_y_sign = 1.0 if y_sign >= 0 else -1.0
+
+    def _collides_at(self, pos: Vec3) -> bool:
+        px, pz = pos.x, pos.z
+        r = self._collision_radius
+        for wx, wz, sx, sz in self._collision_rects:
+            if abs(px - wx) <= (sx * 0.5 + r) and abs(pz - wz) <= (sz * 0.5 + r):
+                return True
+        return False
+
+    def _apply_movement(self, delta: Vec3) -> Vec3:
+        """Apply planar movement with stepwise collision checks and wall sliding."""
+        remaining = delta.length()
+        if remaining <= 1e-8:
+            return Vec3(0, 0, 0)
+
+        direction = delta / remaining
+        max_step = max(0.04, self._collision_radius * 0.25)
+        steps = max(1, int(math.ceil(remaining / max_step)))
+        step_delta = delta / steps
+        applied = Vec3(0, 0, 0)
+
+        for _ in range(steps):
+            trial = self.position + step_delta
+            if not self._collides_at(trial):
+                self.position = trial
+                applied += step_delta
+                continue
+
+            # If the full step is blocked, try each axis separately to slide along walls.
+            trial_x = Vec3(self.position.x + step_delta.x, self.position.y, self.position.z)
+            if not self._collides_at(trial_x):
+                self.position = trial_x
+                applied.x += step_delta.x
+                continue
+
+            trial_z = Vec3(self.position.x, self.position.y, self.position.z + step_delta.z)
+            if not self._collides_at(trial_z):
+                self.position = trial_z
+                applied.z += step_delta.z
+                continue
+
+            # Completely blocked; stop instead of forcing a partial penetration.
+            break
+
+        return applied
+
+    def _apply_snap_turn(self) -> None:
+        """Use right-stick X for snap turning in VR (mouse-look replacement)."""
+        if not self._enable_snap_turn:
+            return
+        if not self._controller_available():
+            self._snap_turn_latch = False
+            return
+
+        rx, _ = self._ctrl.get_thumbstick('right')
+        if abs(rx) < self._snap_turn_deadzone:
+            self._snap_turn_latch = False
+            return
+
+        if self._snap_turn_latch:
+            return
+
+        self._snap_turn_latch = True
+        turn = -self._snap_turn_angle if rx > 0 else self._snap_turn_angle
+        try:
+            ts = base.openvr.tracking_space
+            ts.setH(ts.getH() + turn)
+        except Exception:
+            pass
 
     @staticmethod
     def _raw_key_axis(pos_key: str, neg_key: str) -> float:
@@ -323,23 +508,66 @@ class VRPlayer(Entity):
         except Exception:
             return 0.0
 
+    @staticmethod
+    def _get_head_world_pos() -> Vec3:
+        """Return HMD/camera world position used as collision reference."""
+        try:
+            p = camera.world_position
+            return Vec3(p.x, p.y, p.z)
+        except Exception:
+            return Vec3(0, 0, 0)
+
+    def _controller_available(self, force: bool = False) -> bool:
+        """Poll controller availability at low frequency to avoid per-frame stalls."""
+        now = time.perf_counter()
+        if force or now >= self._ctrl_next_poll_t:
+            self._ctrl_available_cached = self._ctrl.poll_connection()
+            self._ctrl_next_poll_t = now + self._ctrl_poll_interval
+        return self._ctrl_available_cached
+
     def update(self):
         if not self.enabled:
             return
+
+        self._apply_snap_turn()
+
+        # Keep collision anchor aligned with real HMD position.
+        head_pos = self._get_head_world_pos()
+        self.position = Vec3(head_pos.x, self.position.y, head_pos.z)
+
+        # If room-scale drift puts the head inside a wall, snap back to last safe point.
+        if self._collides_at(self.position):
+            correction = Vec3(
+                self._last_safe_pos.x - self.position.x,
+                0,
+                self._last_safe_pos.z - self.position.z,
+            )
+            if correction.length_squared() > 1e-8:
+                self._move_vr_rig(correction)
+            self.position = Vec3(self._last_safe_pos.x, self.position.y, self._last_safe_pos.z)
+            return
+        else:
+            self._last_safe_pos = Vec3(self.position.x, self.position.y, self.position.z)
 
         # --- keyboard ---
         kb_x = (held_keys["d"] - held_keys["a"]) + self._raw_key_axis("d", "a")
         kb_z = (held_keys["w"] - held_keys["s"]) + self._raw_key_axis("w", "s")
 
-        # --- controller thumbstick (support both hands) ---
-        if self._ctrl.available:
-            lx, ly = self._ctrl.get_thumbstick('left')
-            rx, ry = self._ctrl.get_thumbstick('right')
-            # Use the stick with the stronger input so left/right bindings both work.
-            if (lx * lx + ly * ly) >= (rx * rx + ry * ry):
-                ct_x, ct_y = lx, ly
+        # --- controller thumbstick ---
+        if self._controller_available():
+            left_x, left_y = self._ctrl.get_thumbstick('left')
+            right_x, right_y = self._ctrl.get_thumbstick('right')
+
+            # Use whichever stick is actually being pushed.
+            left_mag = left_x * left_x + left_y * left_y
+            right_mag = right_x * right_x + right_y * right_y
+            if right_mag > left_mag:
+                ct_x, ct_y = right_x, right_y
             else:
-                ct_x, ct_y = rx, ry
+                ct_x, ct_y = left_x, left_y
+
+            ct_x *= self._stick_x_sign
+            ct_y *= self._stick_y_sign
         else:
             ct_x, ct_y = (0.0, 0.0)
 
@@ -367,7 +595,13 @@ class VRPlayer(Entity):
         move = (fwd * dz + right * dx)
         if move.length_squared() <= 1e-8:
             return
-        self.position += move.normalized() * self.speed * time.dt
+        delta = move.normalized() * self.speed * time.dt
+
+        applied = self._apply_movement(delta)
+
+        if applied.length_squared() > 0:
+            self._last_safe_pos = Vec3(self.position.x, self.position.y, self.position.z)
+            self._move_vr_rig(applied)
 
 
 # ---------------------------------------------------------------------------

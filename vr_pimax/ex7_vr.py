@@ -99,6 +99,20 @@ def cell_center(r, c, rows, cols):
     )
 
 
+def center_spawn_cell(rows: int, cols: int) -> tuple[int, int]:
+    """Return the cell closest to the geometric center of the maze."""
+    best = (0, 0)
+    best_dist = float('inf')
+    for r in range(rows):
+        for c in range(cols):
+            x, z = cell_center(r, c, rows, cols)
+            dist = x * x + z * z
+            if dist < best_dist:
+                best_dist = dist
+                best = (r, c)
+    return best
+
+
 # ---------------------------------------------------------------------------
 # Maze scene builder  (unchanged)
 # ---------------------------------------------------------------------------
@@ -186,10 +200,20 @@ class Experiment(Entity):
         self._recording    = False
         self.trial_t0      = 0.0
         self.fixation_t0   = None
+        self.fixation_mono_t0 = None
+        self._ctrl_available_cached = False
+        self._ctrl_next_poll_t = 0.0
+        self._ctrl_poll_interval = 0.25
+        self._stall_threshold_s = 0.8
+        self._stall_clear_after_s = 2.0
+        self._stall_msg_until = 0.0
+        self._stall_count = 0
+        self._last_update_mono = time.perf_counter()
 
         # [VR-4] Eye tracker
         self.eye  = EyeTracker()
         self.ctrl = VRControllerInput()
+        self._ctrl_available_cached = self.ctrl.available
 
         # CSV files — [VR-5] trajectory has extra gaze columns
         self._exp_file   = open('maze_experiment_vr.csv', 'w', newline='')
@@ -212,8 +236,9 @@ class Experiment(Entity):
         ])
         self._walls_w.writerow(['trial', 'x', 'z', 'sx', 'sz'])
 
-        # [VR-2] VRPlayer instead of FirstPersonController
-        self.player = VRPlayer(speed=5.0)
+        # [VR-2] VRPlayer instead of FirstPersonController.
+        # Bumped for maze cell scale (CELL=4) so locomotion feels responsive.
+        self.player = VRPlayer(speed=9.0)
         # [VR-6] Removed: self.player.camera_pivot.y = 0.2
         #         In VR the real HMD position sets the camera height.
 
@@ -226,6 +251,8 @@ class Experiment(Entity):
         # HUD
         self.msg_text   = Text(text='', origin=(0, 0),          scale=2, parent=camera.ui)
         self.score_text = Text(text='', position=(-0.85, 0.45), scale=2, parent=camera.ui)
+        self.ctrl_text  = Text(text='', position=(-0.85, 0.35), scale=1.2, parent=camera.ui)
+        self.warn_text  = Text(text='', position=(-0.85, 0.28), scale=1.0, color=color.orange, parent=camera.ui)
 
         self.show_instruction()
 
@@ -246,7 +273,36 @@ class Experiment(Entity):
             f"Press SPACE  (or controller trigger)  to start"
         )
         self.player.enabled = False
+        self.ctrl_text.text = f"Controller: {'OK' if self._controller_available(force=True) else 'WAITING'}"
         # [VR-3] mouse.locked = False  <- removed
+
+    def _controller_available(self, force: bool = False) -> bool:
+        """Poll controller connection at low frequency to keep frame loop smooth."""
+        now = time.perf_counter()
+        if force or now >= self._ctrl_next_poll_t:
+            self._ctrl_available_cached = self.ctrl.poll_connection()
+            self._ctrl_next_poll_t = now + self._ctrl_poll_interval
+        return self._ctrl_available_cached
+
+    def _handle_stall(self, frame_gap: float) -> None:
+        """Show warning and reduce polling rates after a long-frame stall."""
+        self._stall_count += 1
+        self._stall_msg_until = time.perf_counter() + self._stall_clear_after_s
+        self.warn_text.text = f"Warning: long frame {frame_gap:.2f}s (stall #{self._stall_count})"
+        print(
+            f"[STALL] gap={frame_gap:.3f}s state={self.state} trial={self.current_trial + 1}"
+        )
+
+        # Back off controller polling to reduce pressure during unstable periods.
+        self._ctrl_poll_interval = min(1.0, self._ctrl_poll_interval + 0.1)
+        try:
+            self.ctrl.set_reconnect_interval(max(1.0, self._ctrl_poll_interval * 2.0))
+        except Exception:
+            pass
+        try:
+            self.player.set_controller_poll_interval(self._ctrl_poll_interval)
+        except Exception:
+            pass
 
     # -------------------------------------------------------------------------
     # State: FIXATION
@@ -256,8 +312,9 @@ class Experiment(Entity):
         self.state         = 'FIXATION'
         self.msg_text.text = '+'
         self.fixation_t0   = time.time()
+        self.fixation_mono_t0 = time.perf_counter()
         send_trigger(TRIG_FIXATION)
-        # Keep the original timer; update() also has a watchdog fallback.
+        # Keep delayed invoke, but update() has a monotonic watchdog fallback.
         invoke(self.start_task, delay=1)
 
     # -------------------------------------------------------------------------
@@ -271,6 +328,7 @@ class Experiment(Entity):
 
         self.state         = 'TASK'
         self.fixation_t0   = None
+        self.fixation_mono_t0 = None
         self.msg_text.text = ''
 
         t = self.trials[self.current_trial]
@@ -283,6 +341,9 @@ class Experiment(Entity):
         for (wx, wz, sx, sz) in wall_recs:
             self._walls_w.writerow([self.current_trial + 1, wx, wz, sx, sz])
         self._walls_file.flush()
+
+        # Register walls for locomotion collision blocking.
+        self.player.set_collision_rects(wall_recs, radius=0.52)
 
         # Spawn stars at random non-start cells
         all_cells  = [(r, c) for r in range(rows) for c in range(cols)
@@ -299,10 +360,12 @@ class Experiment(Entity):
         self.score = 0
         self.score_text.text = f"Stars: 0/{t['n_stars']}"
 
-        # Place player at cell (0, 0)
-        px, pz = cell_center(0, 0, rows, cols)
-        self.player.position = Vec3(px, 1.0, pz)
+        # Place player at the maze center-adjacent cell.
+        spawn_r, spawn_c = center_spawn_cell(rows, cols)
+        px, pz = cell_center(spawn_r, spawn_c, rows, cols)
+        self.player.teleport_to(Vec3(px, 1.0, pz))
         self.player.enabled  = True
+        self.ctrl_text.text = f"Controller: {'OK' if self._controller_available(force=True) else 'WAITING'}"
         # [VR-3] mouse.locked = True  <- removed; HMD provides look direction
         # [VR-2] rotation_y = 45     <- removed; HMD controls orientation
 
@@ -350,9 +413,11 @@ class Experiment(Entity):
         for e in self.stars + self.room_ents:
             destroy(e)
         self.stars, self.room_ents = [], []
+        self.player.set_collision_rects([], radius=0.52)
 
         self.player.enabled  = False
         self.score_text.text = ''
+        self.ctrl_text.text = f"Controller: {'OK' if self._controller_available(force=True) else 'WAITING'}"
         # [VR-3] mouse.locked = False  <- removed
 
         self.show_feedback(t, duration, completed)
@@ -371,6 +436,7 @@ class Experiment(Entity):
             f"Time: {duration:.1f} s\n\n"
             f"Press SPACE  (or controller trigger)  to continue"
         )
+        self.ctrl_text.text = f"Controller: {'OK' if self._controller_available(force=True) else 'WAITING'}"
 
     # -------------------------------------------------------------------------
     # Advance to next trial
@@ -423,16 +489,30 @@ class Experiment(Entity):
     # -------------------------------------------------------------------------
 
     def update(self):
+        now = time.perf_counter()
+        frame_gap = now - self._last_update_mono
+        self._last_update_mono = now
+        if frame_gap >= self._stall_threshold_s:
+            self._handle_stall(frame_gap)
+        elif now >= self._stall_msg_until:
+            self.warn_text.text = ''
+
+        ctrl_ok = self._controller_available()
+        self.ctrl_text.text = f"Controller: {'OK' if ctrl_ok else 'WAITING'}"
+
         # VR runtimes can occasionally miss delayed invoke callbacks.
         # Watchdog ensures FIXATION always advances to TASK after ~1s.
-        if self.state == 'FIXATION' and self.fixation_t0 is not None:
-            if (time.time() - self.fixation_t0) >= 1.1:
+        if self.state == 'FIXATION' and self.fixation_mono_t0 is not None:
+            if (time.perf_counter() - self.fixation_mono_t0) >= 1.1:
                 self.start_task()
 
         # Controller trigger acts as SPACE for state transitions
-        if self.ctrl.available and self.ctrl.trigger_just_pressed():
+        if ctrl_ok and self.ctrl.trigger_just_pressed():
             if self.state == 'INSTRUCTION':
                 self.show_fixation()
+            elif self.state == 'FIXATION':
+                # Manual override if timer/invoke is delayed.
+                self.start_task()
             elif self.state == 'FEEDBACK':
                 self.next_trial()
 
@@ -465,6 +545,8 @@ class Experiment(Entity):
         if key == 'space':
             if self.state == 'INSTRUCTION':
                 self.show_fixation()
+            elif self.state == 'FIXATION':
+                self.start_task()
             elif self.state == 'FEEDBACK':
                 self.next_trial()
         elif key == 'escape' and self.state == 'TASK':
