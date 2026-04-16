@@ -643,9 +643,7 @@ class EyeTracker:
         try:
             self._proc = subprocess.Popen(
                 [sys.executable, worker],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0),
+                # Let stdout/stderr go to the same terminal so errors are visible
             )
         except Exception as e:
             print(f"[EyeTracker] Worker launch failed: {e}")
@@ -694,7 +692,13 @@ class EyeTracker:
         if not self._ok:
             return (0.0, 0.0, 0.0)
         if self._backend == 'openxr':
-            gx, gy, gz, *_ = self._read_shm()
+            raw = self._read_shm()
+            # One-time diagnostic on first call
+            if not getattr(self, '_diag_done', False):
+                self._diag_done = True
+                alive = self._proc and self._proc.poll() is None
+                print(f"[EyeTracker] shm={raw}  worker_alive={alive}")
+            gx, gy, gz = raw[0], raw[1], raw[2]
             return (round(gx, 5), round(gy, 5), round(gz, 5))
         return self._sample_proxy()
 
