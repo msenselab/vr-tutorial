@@ -629,7 +629,7 @@ class EyeTracker:
             return False
 
         try:
-            import pyopenxr  # noqa: F401  just check it's installed
+            import xr  # pyopenxr installs as 'xr'  # noqa: F401
         except ImportError:
             print("[EyeTracker] pyopenxr not installed → pip install pyopenxr")
             return False
@@ -647,24 +647,18 @@ class EyeTracker:
                 stderr=subprocess.STDOUT,
                 creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0),
             )
-            # Give worker a moment to write its status
-            import time as _time
-            _time.sleep(0.5)
-
-            status = self._read_shm()[-1]
-            if status == 2:   # STATUS_ERROR
-                print("[EyeTracker] eye_worker reported an error — using proxy.")
-                self._cleanup_proc()
-                return False
-
-            self._backend = 'openxr'
-            print("[EyeTracker] Mode: pyopenxr worker — true gaze via XR_EXT_eye_gaze_interaction")
-            return True
-
         except Exception as e:
             print(f"[EyeTracker] Worker launch failed: {e}")
             self._cleanup_proc()
             return False
+
+        # Worker needs a few seconds to reach FOCUSED state in SteamVR.
+        # Don't block here — sample() will return proxy data until status=OK,
+        # then seamlessly switch to real gaze.
+        self._backend = 'openxr'
+        print("[EyeTracker] Mode: pyopenxr worker launched — waiting for FOCUSED state...")
+        print("[EyeTracker]   (gaze data will be live once SteamVR session is ready)")
+        return True
 
     def _cleanup_proc(self):
         if self._proc:

@@ -6,7 +6,22 @@
       "Bash(ls *)",
       "Bash(find . -name \"*.csv\" -newer vr_pimax/vr_utils.py -not -path \"./.venv/*\")",
       "Bash(find . -name \"gaze_*.csv\" -not -path \"./.venv/*\")",
-      "Bash(python -c ' *)"
+      "Bash(python -c ' *)",
+      "Bash(.venv/Scripts/python -c \"import xr; print\\('xr version:', xr.__version__\\)\")",
+      "Bash(.venv/Scripts/pip install *)",
+      "Bash(.venv/Scripts/python -c \"import xr; print\\('xr OK, version:', xr.__version__\\)\")",
+      "Bash(.venv/Scripts/pip show *)",
+      "Bash(.venv/Scripts/pip list *)",
+      "Bash(.venv/Scripts/pip.exe show *)",
+      "Bash(.venv/Scripts/pip.exe list *)",
+      "Bash(python -c \"import xr; print\\('xr OK:', xr.__version__\\)\")",
+      "Bash(pip show *)",
+      "Bash(where python *)",
+      "Bash(python -c \"import sys; print\\(sys.executable\\)\")",
+      "Bash(D:/vr-tutorial/.venv/Scripts/python.exe --version)",
+      "Bash(D:/vr-tutorial/.venv/Scripts/python.exe -c \"import sys; print\\(sys.executable\\)\")",
+      "Bash(D:/vr-tutorial/.venv/Scripts/python.exe -m pip install pyopenxr)",
+      "Bash(D:/vr-tutorial/.venv/Scripts/python.exe *)"
     ]
   }
 }
