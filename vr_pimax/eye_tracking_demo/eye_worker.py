@@ -154,12 +154,19 @@ def _run(shm):
     # --- check available extensions ---
     avail = {p.extension_name for p in xr.enumerate_instance_extension_properties(None)}
 
+    print(f"[EyeWorker] Available extensions ({len(avail)}):", flush=True)
+    for e in sorted(avail):
+        print(f"  {e}", flush=True)
+
     EYE_EXT = "XR_EXT_eye_gaze_interaction"
     if EYE_EXT not in avail:
         print("[EyeWorker] XR_EXT_eye_gaze_interaction not available in this runtime.",
               flush=True)
-        print("[EyeWorker] Make sure SteamVR is running and the headset is connected.",
-              flush=True)
+        print("[EyeWorker] Possible causes:", flush=True)
+        print("  1. SteamVR is not set as the default OpenXR runtime", flush=True)
+        print("     Fix: SteamVR menu → Settings → OpenXR → Set SteamVR as OpenXR runtime", flush=True)
+        print("  2. Eye tracking not enabled in Pimax Play", flush=True)
+        print("     Fix: Pimax Play → Settings → Eye Tracking → Enable", flush=True)
         _write(shm, status=STATUS_ERROR)
         return
 

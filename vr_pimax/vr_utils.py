@@ -640,23 +640,22 @@ class EyeTracker:
             print(f"[EyeTracker] Shared memory open failed: {e}")
             return False
 
+        self._backend = 'openxr'
+        self._worker_script = worker   # actual launch deferred to _launch_worker_deferred()
+        self._proc = None
+        print("[EyeTracker] Mode: pyopenxr worker will start after VR init.")
+        return True
+
+    def _launch_worker_deferred(self):
+        """Call this once after panda3d-openvr is fully initialized."""
+        if self._proc is not None or self._backend != 'openxr':
+            return
         try:
-            self._proc = subprocess.Popen(
-                [sys.executable, worker],
-                # Let stdout/stderr go to the same terminal so errors are visible
-            )
+            self._proc = subprocess.Popen([sys.executable, self._worker_script])
+            print("[EyeTracker] pyopenxr worker launched.", flush=True)
         except Exception as e:
             print(f"[EyeTracker] Worker launch failed: {e}")
-            self._cleanup_proc()
-            return False
-
-        # Worker needs a few seconds to reach FOCUSED state in SteamVR.
-        # Don't block here — sample() will return proxy data until status=OK,
-        # then seamlessly switch to real gaze.
-        self._backend = 'openxr'
-        print("[EyeTracker] Mode: pyopenxr worker launched — waiting for FOCUSED state...")
-        print("[EyeTracker]   (gaze data will be live once SteamVR session is ready)")
-        return True
+            self._backend = 'proxy'
 
     def _cleanup_proc(self):
         if self._proc:

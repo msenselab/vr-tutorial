@@ -191,6 +191,8 @@ class GazeDemo(Entity):
     # ------------------------------------------------------------------
 
     def update(self):
+        if hasattr(self.eye, '_launch_worker_deferred'):
+            self.eye._launch_worker_deferred()
         now = time.perf_counter()
         gx, gy, gz, pupil_mm = self.eye.sample_with_pupil()
         hp = self.player.position
