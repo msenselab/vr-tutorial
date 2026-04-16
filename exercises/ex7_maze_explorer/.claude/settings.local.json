@@ -2,7 +2,11 @@
   "permissions": {
     "allow": [
       "Bash(python -c \"import pandas, numpy, matplotlib; print\\('OK'\\)\")",
-      "Bash(pip install *)"
+      "Bash(pip install *)",
+      "Bash(ls *)",
+      "Bash(find . -name \"*.csv\" -newer vr_pimax/vr_utils.py -not -path \"./.venv/*\")",
+      "Bash(find . -name \"gaze_*.csv\" -not -path \"./.venv/*\")",
+      "Bash(python -c ' *)"
     ]
   }
 }

@@ -571,84 +571,180 @@ class EyeTracker:
     """
     Samples gaze direction from the Pimax Crystal's built-in eye tracker.
 
-    Current implementation
-    ----------------------
-    Uses the HMD forward vector as a gaze proxy.  This gives you
-    head-direction data immediately with zero extra dependencies and
-    is a valid baseline for head-referenced analyses.
+    Initialization order (first success wins)
+    -----------------------------------------
+    1. Pimax PGEE SDK  — ``pip install PimaxEyeTracking`` (recommended)
+    2. SRanipal SDK    — Vive/Pimax fallback via ``pip install sranipal``
+    3. HMD forward     — proxy; head direction, zero extra dependencies
 
-    Upgrade to true per-eye gaze
-    ----------------------------
-    Option A — Pimax PGEE SDK (recommended for Pimax Crystal)
-        Install the Pimax Eye Tracking SDK, then replace ``sample()``::
+    No code changes are needed in experiment scripts regardless of which
+    backend is active — ``sample()`` and ``sample_with_pupil()`` always
+    return the same types.
 
-            from PimaxEyeTracker import PimaxEyeTracker
-            self._et = PimaxEyeTracker()
-            self._et.open()
-            # in sample():
-            data = self._et.get_gaze_data()
-            return (data.gaze_x, data.gaze_y, data.gaze_z)
-
-    Option B — pyopenxr XR_EXT_eye_gaze_interaction
-        Works if SteamVR exposes the extension for your device.
-        See GUIDE.md §Eye Tracking for a full implementation example.
-
-    The ``sample()`` signature is identical for both options, so
-    swapping implementations requires no changes to the experiment scripts.
+    To force proxy mode (e.g. for offline testing):
+        EyeTracker(force_proxy=True)
     """
 
-    def __init__(self):
-        self._ok = False
-        if _ensure_openvr_initialized():
-            self._ok = True
-            print("[EyeTracker] Active — using HMD forward as gaze proxy.")
-            print("[EyeTracker] See GUIDE.md §Eye Tracking to enable true gaze.")
-        else:
-            print("[EyeTracker] WARNING: base.openvr not found.")
-            print("[EyeTracker]   Did you call enable_vr() before Ursina()?")
+    # ------------------------------------------------------------------ init
+
+    def __init__(self, force_proxy: bool = False):
+        self._ok      = False
+        self._backend = 'proxy'
+        self._et      = None   # SDK handle
+
+        if not force_proxy:
+            self._ok = (
+                self._try_pgee()
+                or self._try_sranipal()
+            )
+
+        if not self._ok:
+            # Proxy fallback — always succeeds if openvr is present
+            if _ensure_openvr_initialized():
+                self._ok      = True
+                self._backend = 'proxy'
+                print("[EyeTracker] Mode: HMD-forward proxy  "
+                      "(install PimaxEyeTracking for true gaze)")
+            else:
+                print("[EyeTracker] WARNING: no VR runtime — all gaze data will be zero.")
+
+    # ------------------------------------------------------------------ SDK loaders
+
+    def _try_pgee(self) -> bool:
+        """Attempt to initialise the Pimax PGEE (PimaxEyeTracking) SDK."""
+        try:
+            import PimaxEyeTracking as pgee   # pip install PimaxEyeTracking
+            client = pgee.EyeTrackingClient()
+            client.StartClient()
+            self._et      = client
+            self._backend = 'pgee'
+            print("[EyeTracker] Mode: Pimax PGEE SDK — true per-eye gaze active.")
+            return True
+        except ImportError:
+            print("[EyeTracker] PimaxEyeTracking not installed  "
+                  "→  pip install PimaxEyeTracking")
+        except Exception as e:
+            print(f"[EyeTracker] PGEE init failed: {e}")
+        return False
+
+    def _try_sranipal(self) -> bool:
+        """Attempt to initialise the SRanipal eye-tracking SDK."""
+        try:
+            import sranipal                           # pip install sranipal
+            from sranipal.sranipal_eye_v2 import SRanipal_Eye_v2 as Eye
+            Eye.Initial()
+            self._et      = Eye
+            self._backend = 'sranipal'
+            print("[EyeTracker] Mode: SRanipal SDK — true per-eye gaze active.")
+            return True
+        except ImportError:
+            pass   # not installed — silent
+        except Exception as e:
+            print(f"[EyeTracker] SRanipal init failed: {e}")
+        return False
+
+    # ------------------------------------------------------------------ sampling
 
     def sample(self) -> tuple[float, float, float]:
         """
-        Return the current gaze direction (gx, gy, gz) in world space.
-
-        The returned vector points in the direction the participant is
-        looking.  Currently this is the HMD forward vector (head direction).
+        Return current gaze direction (gx, gy, gz) as a unit vector in world space.
 
         Returns ``(0.0, 0.0, 0.0)`` if the tracker is unavailable.
         """
         if not self._ok:
             return (0.0, 0.0, 0.0)
-        try:
-            f = camera.forward
-            return (round(f.x, 4), round(f.y, 4), round(f.z, 4))
-        except Exception:
-            return (0.0, 0.0, 0.0)
+
+        if self._backend == 'pgee':
+            return self._sample_pgee()
+        if self._backend == 'sranipal':
+            return self._sample_sranipal()
+        return self._sample_proxy()
 
     def sample_with_pupil(self) -> tuple[float, float, float, float]:
         """
-        Return gaze direction (gx, gy, gz) and pupil size (diameter in mm).
+        Return (gx, gy, gz, pupil_diameter_mm).
 
-        Returns ``(0.0, 0.0, 0.0, 0.0)`` if the tracker is unavailable.
-
-        To integrate real pupil size from the Pimax PGEE SDK, replace this method::
-
-            def sample_with_pupil(self) -> tuple[float, float, float, float]:
-                if not self._ok:
-                    return (0.0, 0.0, 0.0, 0.0)
-                try:
-                    data = self._et.get_gaze_data()
-                    # Adjust field names based on your SDK version
-                    return (
-                        round(data.combined_gaze_x, 4),
-                        round(data.combined_gaze_y, 4),
-                        round(data.combined_gaze_z, 4),
-                        round(data.pupil_diameter, 2),  # or left_pupil, right_pupil avg
-                    )
-                except Exception:
-                    return (0.0, 0.0, 0.0, 0.0)
+        pupil_diameter_mm is 0.0 in proxy mode (no real SDK).
         """
-        gx, gy, gz = self.sample()
-        return (gx, gy, gz, 0.0)  # pupil size not available in proxy mode
+        if self._backend == 'pgee':
+            return self._sample_pgee_pupil()
+        if self._backend == 'sranipal':
+            gx, gy, gz = self._sample_sranipal()
+            pupil = self._sranipal_pupil()
+            return (gx, gy, gz, pupil)
+        gx, gy, gz = self._sample_proxy()
+        return (gx, gy, gz, 0.0)
+
+    # ------------------------------------------------------------------ backends
+
+    def _sample_pgee(self) -> tuple[float, float, float]:
+        try:
+            import PimaxEyeTracking as pgee
+            data = pgee.EyeTrackingData()
+            self._et.GetEyeTrackingData(data)
+            g = data.combinedEye.gazeDirectionNormalized
+            return (round(g.x, 5), round(g.y, 5), round(g.z, 5))
+        except Exception:
+            return self._sample_proxy()
+
+    def _sample_pgee_pupil(self) -> tuple[float, float, float, float]:
+        try:
+            import PimaxEyeTracking as pgee
+            data = pgee.EyeTrackingData()
+            self._et.GetEyeTrackingData(data)
+            g = data.combinedEye.gazeDirectionNormalized
+            # Average left/right pupil diameter; field names may vary by SDK version
+            try:
+                pupil = (data.leftEye.pupilDiameter + data.rightEye.pupilDiameter) / 2.0
+            except Exception:
+                pupil = 0.0
+            return (round(g.x, 5), round(g.y, 5), round(g.z, 5), round(pupil, 3))
+        except Exception:
+            return (*self._sample_proxy(), 0.0)
+
+    def _sample_sranipal(self) -> tuple[float, float, float]:
+        try:
+            import sranipal
+            from sranipal.sranipal_eye_v2 import SRanipal_Eye_v2 as Eye
+            verbose = Eye.VerboseData()
+            Eye.GetVerboseData(verbose)
+            g = verbose.combined.eye_data.gaze_direction_normalized
+            return (round(g.x, 5), round(g.y, 5), round(g.z, 5))
+        except Exception:
+            return self._sample_proxy()
+
+    def _sranipal_pupil(self) -> float:
+        try:
+            from sranipal.sranipal_eye_v2 import SRanipal_Eye_v2 as Eye
+            verbose = Eye.VerboseData()
+            Eye.GetVerboseData(verbose)
+            pd_l = verbose.left_eye_data.pupil_diameter_mm
+            pd_r = verbose.right_eye_data.pupil_diameter_mm
+            return round((pd_l + pd_r) / 2.0, 3)
+        except Exception:
+            return 0.0
+
+    def _sample_proxy(self) -> tuple[float, float, float]:
+        """HMD-forward fallback — reads true head orientation from openvr anchor."""
+        try:
+            hmd = base.openvr.hmd_anchor
+            q   = hmd.getQuat(render)
+            fwd = q.xform(Vec3(0, 0, 1))
+            return (round(fwd.x, 5), round(fwd.y, 5), round(fwd.z, 5))
+        except Exception:
+            pass
+        try:
+            f = camera.forward
+            return (round(f.x, 5), round(f.y, 5), round(f.z, 5))
+        except Exception:
+            return (0.0, 0.0, 0.0)
+
+    # ------------------------------------------------------------------ properties
+
+    @property
+    def backend(self) -> str:
+        """Active backend name: 'pgee', 'sranipal', or 'proxy'."""
+        return self._backend
 
     @property
     def available(self) -> bool:
