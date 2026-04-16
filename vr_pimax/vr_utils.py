@@ -524,13 +524,27 @@ class VRPlayer(Entity):
             return
 
         # Project the HMD heading onto the horizontal plane.
-        # In some VR pipelines camera basis may momentarily degenerate.
-        fwd   = Vec3(camera.forward.x, 0, camera.forward.z)
-        right = Vec3(camera.right.x,   0, camera.right.z)
+        # camera.forward is NOT updated by p3dopenvr — the Ursina camera
+        # entity is decoupled from HMD tracking. Read orientation directly
+        # from the HMD anchor node instead.
+        fwd = right = None
+        try:
+            q = base.openvr.hmd_anchor.getQuat(render)
+            # Ursina world space is Y-up; forward = +Z, right = +X.
+            f = q.xform(Vec3(0, 0, 1))
+            r = q.xform(Vec3(1, 0, 0))
+            fwd   = Vec3(f.x, 0, f.z)
+            right = Vec3(r.x, 0, r.z)
+        except Exception:
+            pass
 
-        if fwd.length_squared() < 1e-6 or right.length_squared() < 1e-6:
-            fwd = Vec3(self.forward.x, 0, self.forward.z)
-            right = Vec3(self.right.x, 0, self.right.z)
+        if fwd is None or fwd.length_squared() < 1e-6:
+            fwd   = Vec3(camera.forward.x, 0, camera.forward.z)
+            right = Vec3(camera.right.x,   0, camera.right.z)
+
+        if fwd.length_squared() < 1e-6:
+            fwd   = Vec3(self.forward.x, 0, self.forward.z)
+            right = Vec3(self.right.x,   0, self.right.z)
 
         if fwd.length_squared() > 0:
             fwd.normalize()
