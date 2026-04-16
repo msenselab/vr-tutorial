@@ -17,9 +17,19 @@ Public API
 """
 
 import math
+import mmap
+import os
+import struct
+import subprocess
+import sys
 
 from panda3d.core import ConfigVariableString, KeyboardButton, loadPrcFileData
 from ursina import *
+
+# Shared-memory contract with eye_worker.py
+_SHM_NAME  = "pimax_gaze_v1"
+_GAZE_FMT  = "<ffffffi"                  # gx gy gz pupil_l pupil_r conf status
+_GAZE_SIZE = struct.calcsize(_GAZE_FMT)  # 28 bytes
 
 
 def _ensure_openvr_initialized() -> bool:
@@ -573,15 +583,15 @@ class EyeTracker:
 
     Initialization order (first success wins)
     -----------------------------------------
-    1. Pimax PGEE SDK  — ``pip install PimaxEyeTracking`` (recommended)
-    2. SRanipal SDK    — Vive/Pimax fallback via ``pip install sranipal``
-    3. HMD forward     — proxy; head direction, zero extra dependencies
+    1. pyopenxr worker  — launches eye_worker.py as a subprocess; reads
+                          XR_EXT_eye_gaze_interaction via shared memory.
+                          Requires:  pip install pyopenxr
+    2. HMD-forward proxy — head direction; zero extra dependencies.
 
-    No code changes are needed in experiment scripts regardless of which
-    backend is active — ``sample()`` and ``sample_with_pupil()`` always
-    return the same types.
+    No code changes needed in experiment scripts — sample() and
+    sample_with_pupil() always return the same types regardless of backend.
 
-    To force proxy mode (e.g. for offline testing):
+    Force proxy mode (e.g. offline testing):
         EyeTracker(force_proxy=True)
     """
 
@@ -590,139 +600,122 @@ class EyeTracker:
     def __init__(self, force_proxy: bool = False):
         self._ok      = False
         self._backend = 'proxy'
-        self._et      = None   # SDK handle
+        self._proc    = None   # eye_worker subprocess
+        self._shm     = None   # shared memory handle
 
         if not force_proxy:
-            self._ok = (
-                self._try_pgee()
-                or self._try_sranipal()
-            )
+            self._ok = self._try_openxr_worker()
 
         if not self._ok:
-            # Proxy fallback — always succeeds if openvr is present
             if _ensure_openvr_initialized():
                 self._ok      = True
                 self._backend = 'proxy'
-                print("[EyeTracker] Mode: HMD-forward proxy  "
-                      "(install PimaxEyeTracking for true gaze)")
+                print("[EyeTracker] Mode: HMD-forward proxy "
+                      "(pip install pyopenxr for true gaze)")
             else:
-                print("[EyeTracker] WARNING: no VR runtime — all gaze data will be zero.")
+                print("[EyeTracker] WARNING: no VR runtime — gaze will be zero.")
 
-    # ------------------------------------------------------------------ SDK loaders
+    # ------------------------------------------------------------------ worker launcher
 
-    def _try_pgee(self) -> bool:
-        """Attempt to initialise the Pimax PGEE (PimaxEyeTracking) SDK."""
+    def _try_openxr_worker(self) -> bool:
+        """Launch eye_worker.py as a subprocess and open shared memory."""
+        # Locate worker script relative to this file
+        worker = os.path.join(os.path.dirname(__file__), 'eye_tracking_demo', 'eye_worker.py')
+        if not os.path.exists(worker):
+            # Also try same directory
+            worker = os.path.join(os.path.dirname(__file__), 'eye_worker.py')
+        if not os.path.exists(worker):
+            print("[EyeTracker] eye_worker.py not found — using proxy.")
+            return False
+
         try:
-            import PimaxEyeTracking as pgee   # pip install PimaxEyeTracking
-            client = pgee.EyeTrackingClient()
-            client.StartClient()
-            self._et      = client
-            self._backend = 'pgee'
-            print("[EyeTracker] Mode: Pimax PGEE SDK — true per-eye gaze active.")
-            return True
+            import pyopenxr  # noqa: F401  just check it's installed
         except ImportError:
-            print("[EyeTracker] PimaxEyeTracking not installed  "
-                  "→  pip install PimaxEyeTracking")
-        except Exception as e:
-            print(f"[EyeTracker] PGEE init failed: {e}")
-        return False
+            print("[EyeTracker] pyopenxr not installed → pip install pyopenxr")
+            return False
 
-    def _try_sranipal(self) -> bool:
-        """Attempt to initialise the SRanipal eye-tracking SDK."""
         try:
-            import sranipal                           # pip install sranipal
-            from sranipal.sranipal_eye_v2 import SRanipal_Eye_v2 as Eye
-            Eye.Initial()
-            self._et      = Eye
-            self._backend = 'sranipal'
-            print("[EyeTracker] Mode: SRanipal SDK — true per-eye gaze active.")
-            return True
-        except ImportError:
-            pass   # not installed — silent
+            self._shm = mmap.mmap(-1, _GAZE_SIZE, tagname=_SHM_NAME)
         except Exception as e:
-            print(f"[EyeTracker] SRanipal init failed: {e}")
-        return False
+            print(f"[EyeTracker] Shared memory open failed: {e}")
+            return False
 
-    # ------------------------------------------------------------------ sampling
+        try:
+            self._proc = subprocess.Popen(
+                [sys.executable, worker],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0),
+            )
+            # Give worker a moment to write its status
+            import time as _time
+            _time.sleep(0.5)
+
+            status = self._read_shm()[-1]
+            if status == 2:   # STATUS_ERROR
+                print("[EyeTracker] eye_worker reported an error — using proxy.")
+                self._cleanup_proc()
+                return False
+
+            self._backend = 'openxr'
+            print("[EyeTracker] Mode: pyopenxr worker — true gaze via XR_EXT_eye_gaze_interaction")
+            return True
+
+        except Exception as e:
+            print(f"[EyeTracker] Worker launch failed: {e}")
+            self._cleanup_proc()
+            return False
+
+    def _cleanup_proc(self):
+        if self._proc:
+            try:
+                self._proc.terminate()
+            except Exception:
+                pass
+            self._proc = None
+        if self._shm:
+            try:
+                self._shm.close()
+            except Exception:
+                pass
+            self._shm = None
+
+    def __del__(self):
+        self._cleanup_proc()
+
+    # ------------------------------------------------------------------ shared memory read
+
+    def _read_shm(self) -> tuple:
+        """Return (gx, gy, gz, pupil_l, pupil_r, confidence, status)."""
+        try:
+            self._shm.seek(0)
+            return struct.unpack(_GAZE_FMT, self._shm.read(_GAZE_SIZE))
+        except Exception:
+            return (0., 0., 1., 0., 0., 0., 2)
+
+    # ------------------------------------------------------------------ public API
 
     def sample(self) -> tuple[float, float, float]:
-        """
-        Return current gaze direction (gx, gy, gz) as a unit vector in world space.
-
-        Returns ``(0.0, 0.0, 0.0)`` if the tracker is unavailable.
-        """
+        """Return gaze direction (gx, gy, gz) as a unit vector in Ursina world space."""
         if not self._ok:
             return (0.0, 0.0, 0.0)
-
-        if self._backend == 'pgee':
-            return self._sample_pgee()
-        if self._backend == 'sranipal':
-            return self._sample_sranipal()
+        if self._backend == 'openxr':
+            gx, gy, gz, *_ = self._read_shm()
+            return (round(gx, 5), round(gy, 5), round(gz, 5))
         return self._sample_proxy()
 
     def sample_with_pupil(self) -> tuple[float, float, float, float]:
-        """
-        Return (gx, gy, gz, pupil_diameter_mm).
-
-        pupil_diameter_mm is 0.0 in proxy mode (no real SDK).
-        """
-        if self._backend == 'pgee':
-            return self._sample_pgee_pupil()
-        if self._backend == 'sranipal':
-            gx, gy, gz = self._sample_sranipal()
-            pupil = self._sranipal_pupil()
-            return (gx, gy, gz, pupil)
+        """Return (gx, gy, gz, pupil_diameter_mm). Pupil is 0.0 in proxy mode."""
+        if not self._ok:
+            return (0.0, 0.0, 0.0, 0.0)
+        if self._backend == 'openxr':
+            gx, gy, gz, pl, pr, *_ = self._read_shm()
+            pupil = (pl + pr) / 2.0 if (pl or pr) else 0.0
+            return (round(gx, 5), round(gy, 5), round(gz, 5), round(pupil, 3))
         gx, gy, gz = self._sample_proxy()
         return (gx, gy, gz, 0.0)
 
-    # ------------------------------------------------------------------ backends
-
-    def _sample_pgee(self) -> tuple[float, float, float]:
-        try:
-            import PimaxEyeTracking as pgee
-            data = pgee.EyeTrackingData()
-            self._et.GetEyeTrackingData(data)
-            g = data.combinedEye.gazeDirectionNormalized
-            return (round(g.x, 5), round(g.y, 5), round(g.z, 5))
-        except Exception:
-            return self._sample_proxy()
-
-    def _sample_pgee_pupil(self) -> tuple[float, float, float, float]:
-        try:
-            import PimaxEyeTracking as pgee
-            data = pgee.EyeTrackingData()
-            self._et.GetEyeTrackingData(data)
-            g = data.combinedEye.gazeDirectionNormalized
-            # Average left/right pupil diameter; field names may vary by SDK version
-            try:
-                pupil = (data.leftEye.pupilDiameter + data.rightEye.pupilDiameter) / 2.0
-            except Exception:
-                pupil = 0.0
-            return (round(g.x, 5), round(g.y, 5), round(g.z, 5), round(pupil, 3))
-        except Exception:
-            return (*self._sample_proxy(), 0.0)
-
-    def _sample_sranipal(self) -> tuple[float, float, float]:
-        try:
-            import sranipal
-            from sranipal.sranipal_eye_v2 import SRanipal_Eye_v2 as Eye
-            verbose = Eye.VerboseData()
-            Eye.GetVerboseData(verbose)
-            g = verbose.combined.eye_data.gaze_direction_normalized
-            return (round(g.x, 5), round(g.y, 5), round(g.z, 5))
-        except Exception:
-            return self._sample_proxy()
-
-    def _sranipal_pupil(self) -> float:
-        try:
-            from sranipal.sranipal_eye_v2 import SRanipal_Eye_v2 as Eye
-            verbose = Eye.VerboseData()
-            Eye.GetVerboseData(verbose)
-            pd_l = verbose.left_eye_data.pupil_diameter_mm
-            pd_r = verbose.right_eye_data.pupil_diameter_mm
-            return round((pd_l + pd_r) / 2.0, 3)
-        except Exception:
-            return 0.0
+    # ------------------------------------------------------------------ proxy fallback
 
     def _sample_proxy(self) -> tuple[float, float, float]:
         """HMD-forward fallback — reads true head orientation from openvr anchor."""
@@ -743,12 +736,11 @@ class EyeTracker:
 
     @property
     def backend(self) -> str:
-        """Active backend name: 'pgee', 'sranipal', or 'proxy'."""
+        """Active backend: 'openxr' or 'proxy'."""
         return self._backend
 
     @property
     def available(self) -> bool:
-        """True if the tracker initialized successfully."""
         return self._ok
 
 
