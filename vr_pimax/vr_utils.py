@@ -628,3 +628,60 @@ class EyeTracker:
     def available(self) -> bool:
         """True if the tracker initialized successfully."""
         return self._ok
+
+
+# ---------------------------------------------------------------------------
+# VR head-locked HUD
+# ---------------------------------------------------------------------------
+
+class VRHud(Entity):
+    """
+    Head-locked HUD panel for panda3d-openvr.
+
+    In panda3d-openvr, Ursina's camera.ui renders to the desktop window
+    only — the HMD compositor does not receive it.  Text must live in the
+    3D scene to appear in the headset.
+
+    This Entity repositions and orients itself in front of the HMD every
+    frame.  Parent any Ursina Text objects to it instead of camera.ui:
+
+        hud = VRHud()
+        msg = Text(text='Hello', parent=hud, scale=2)
+        msg.text = 'Updated'   # update normally
+
+    Position values work like camera.ui but need to be scaled up ~10x
+    because the panel has panel_scale applied (see below).
+
+    Parameters
+    ----------
+    distance : float
+        Distance in front of the HMD in world units (default 2.0).
+    panel_scale : float
+        Uniform scale applied to all children.  With the default 0.06,
+        Text(scale=2) produces characters ≈ 12 cm tall at 2 m, and
+        position offsets of ±8 units place text ≈ ±48 cm from centre.
+        Increase to make everything larger, decrease to shrink it.
+    """
+
+    def __init__(self, distance: float = 2.0, panel_scale: float = 0.06):
+        super().__init__(model=None)
+        self._distance = distance
+        self.scale = panel_scale
+
+    def update(self) -> None:
+        """Reposition and orient the panel in front of the HMD every frame."""
+        try:
+            hmd     = base.openvr.hmd_anchor
+            hmd_pos = hmd.getPos(render)
+            q       = hmd.getQuat(render)
+            fwd     = q.xform(Vec3(0, 0, 1))   # +Z = forward in Ursina Y-up world
+            panel   = Vec3(
+                hmd_pos.x + fwd.x * self._distance,
+                hmd_pos.y + fwd.y * self._distance,
+                hmd_pos.z + fwd.z * self._distance,
+            )
+            self.world_position = panel
+            # Face back toward the HMD so the text surface is visible to the wearer.
+            self.look_at(Vec3(hmd_pos.x, hmd_pos.y, hmd_pos.z))
+        except Exception:
+            pass

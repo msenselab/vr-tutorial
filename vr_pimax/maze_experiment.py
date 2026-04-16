@@ -43,7 +43,7 @@ import time
 import random
 
 from ursina import *
-from vr_utils import enable_vr, VRPlayer, EyeTracker, VRControllerInput   # [VR-1,2,4]
+from vr_utils import enable_vr, VRPlayer, EyeTracker, VRControllerInput, VRHud   # [VR-1,2,4]
 
 # ---------------------------------------------------------------------------
 # Constants  (unchanged)
@@ -248,11 +248,15 @@ class Experiment(Entity):
         sun.look_at(Vec3(1, -1, -1))
         AmbientLight(color=color.rgba(0.3, 0.3, 0.3, 1))
 
-        # HUD
-        self.msg_text   = Text(text='', origin=(0, 0),          scale=2, parent=camera.ui)
-        self.score_text = Text(text='', position=(-0.85, 0.45), scale=2, parent=camera.ui)
-        self.ctrl_text  = Text(text='', position=(-0.85, 0.35), scale=1.2, parent=camera.ui)
-        self.warn_text  = Text(text='', position=(-0.85, 0.28), scale=1.0, color=color.orange, parent=camera.ui)
+        # HUD — parented to VRHud so text appears in the headset.
+        # camera.ui is desktop-only in panda3d-openvr; text must be in 3D scene.
+        # Positions are ~10× the camera.ui values because panel_scale=0.06 shrinks
+        # the coordinate space (±8 units × 0.06 ≈ ±48 cm at 2 m from HMD).
+        self._hud       = VRHud()
+        self.msg_text   = Text(text='', origin=(0, 0),         scale=2,   parent=self._hud)
+        self.score_text = Text(text='', position=(-8.5, 4.5),  scale=2,   parent=self._hud)
+        self.ctrl_text  = Text(text='', position=(-8.5, 3.5),  scale=1.2, parent=self._hud)
+        self.warn_text  = Text(text='', position=(-8.5, 2.8),  scale=1.0, color=color.orange, parent=self._hud)
 
         self.show_instruction()
 

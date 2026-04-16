@@ -37,7 +37,7 @@ import time
 import random
 
 from ursina import *
-from vr_utils import enable_vr, VRPlayer, EyeTracker, VRControllerInput   # [VR-1,2,4]
+from vr_utils import enable_vr, VRPlayer, EyeTracker, VRControllerInput, VRHud   # [VR-1,2,4]
 
 # ---------------------------------------------------------------------------
 # Trigger codes (mock — replace send_trigger() with hardware call)
@@ -145,11 +145,13 @@ class Experiment(Entity):
         # Bumped for VR comfort with 4-unit room scale.
         self.player = VRPlayer(speed=9.0)
 
-        # UI — head-locked 2D overlay (works in VR as screen-space HUD)
-        self.instruction_text = Text(text='', origin=(0, 0),          scale=2, parent=camera.ui)
-        self.fixation_text    = Text(text='', origin=(0, 0),          scale=2, parent=camera.ui)
-        self.score_text       = Text(text='', position=(-0.85, 0.45), scale=2, parent=camera.ui)
-        self.feedback_text    = Text(text='', origin=(0, 0),          scale=2, parent=camera.ui)
+        # HUD — parented to VRHud so text appears in the headset.
+        # camera.ui is desktop-only in panda3d-openvr; text must be in 3D scene.
+        self._hud             = VRHud()
+        self.instruction_text = Text(text='', origin=(0, 0),        scale=2, parent=self._hud)
+        self.fixation_text    = Text(text='', origin=(0, 0),        scale=2, parent=self._hud)
+        self.score_text       = Text(text='', position=(-8.5, 4.5), scale=2, parent=self._hud)
+        self.feedback_text    = Text(text='', origin=(0, 0),        scale=2, parent=self._hud)
 
         self.show_instruction()
 
