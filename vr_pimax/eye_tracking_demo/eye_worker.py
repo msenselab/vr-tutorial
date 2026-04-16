@@ -147,12 +147,18 @@ def _run(shm):
     try:
         import xr
     except ImportError:
-        print("[EyeWorker] pyopenxr not installed → pip install pyopenxr", flush=True)
+        print("[EyeWorker] pyopenxr not installed -> pip install pyopenxr", flush=True)
         _write(shm, status=STATUS_ERROR)
         return
 
     # --- check available extensions ---
-    avail = {p.extension_name for p in xr.enumerate_instance_extension_properties(None)}
+    # pyopenxr may return bytes for extension names on Windows.
+    avail = set()
+    for p in xr.enumerate_instance_extension_properties(None):
+        name = p.extension_name
+        if isinstance(name, bytes):
+            name = name.decode("utf-8", errors="ignore")
+        avail.add(name)
 
     print(f"[EyeWorker] Available extensions ({len(avail)}):", flush=True)
     for e in sorted(avail):
@@ -203,10 +209,26 @@ def _run(shm):
     ))
 
     # verify eye gaze support on this system
-    eye_props  = xr.EyeGazeInteractionSystemPropertiesEXT()
-    sys_props  = xr.SystemProperties(next=ctypes.pointer(eye_props))
-    xr.get_system_properties(instance, system_id, ctypes.byref(sys_props))
-    if not eye_props.supports_eye_gaze_interaction:
+    if hasattr(xr, "SystemEyeGazeInteractionPropertiesEXT"):
+        eye_props = xr.SystemEyeGazeInteractionPropertiesEXT()
+    elif hasattr(xr, "EyeGazeInteractionSystemPropertiesEXT"):
+        eye_props = xr.EyeGazeInteractionSystemPropertiesEXT()
+    else:
+        print("[EyeWorker] Runtime lacks eye-gaze system properties struct.", flush=True)
+        _write(shm, status=STATUS_ERROR)
+        return
+
+    eye_supported = True
+    sys_props = xr.SystemProperties(next=ctypes.pointer(eye_props))
+    try:
+        xr.get_system_properties(instance, system_id, ctypes.byref(sys_props))
+        eye_supported = bool(getattr(eye_props, "supports_eye_gaze_interaction", False))
+    except TypeError:
+        # Some pyopenxr builds expose only the 2-arg form.
+        xr.get_system_properties(instance, system_id)
+        print("[EyeWorker] get_system_properties ext chain unavailable; proceeding.", flush=True)
+
+    if not eye_supported:
         print("[EyeWorker] Headset reports no eye gaze interaction support.", flush=True)
         _write(shm, status=STATUS_ERROR)
         return
@@ -279,7 +301,7 @@ def _run(shm):
                         ctypes.POINTER(xr.EventDataSessionStateChanged),
                     ).contents
                     session_state = xr.SessionState(ev.state)
-                    print(f"[EyeWorker] Session state → {session_state.name}", flush=True)
+                    print(f"[EyeWorker] Session state -> {session_state.name}", flush=True)
 
                     if session_state == xr.SessionState.READY:
                         begin_ci = xr.SessionBeginInfo(
@@ -320,7 +342,7 @@ def _run(shm):
 
         # get gaze pose — for non-headless we need a frame time
         if headless:
-            display_time = xr.TimeSpec(int(time.perf_counter() * 1e9))
+            display_time = xr.Time(int(time.perf_counter() * 1e9))
         else:
             try:
                 frame_state = xr.wait_frame(session)

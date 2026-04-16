@@ -23,8 +23,152 @@ Calibration grid (all angles relative to straight-ahead +Z)
   Yaw:    -20 °,  0 °, +20 °   (left, centre, right)
   Pitch:  +15 °,  0 °, -15 °   (up, eye-level, down)
   Radius:  5 m
-
+PS C:\Users\PC\Documents\GitHub\vr-tutorial> & c:/Users/PC/Documents/GitHub/vr-tutorial/.venv/Scripts/python.exe c:/Users/PC/Documents/GitHub/vr-tutorial/vr_pimax/eye_tracking_demo/gaze_calibration.py
+info: Using primary monitor: Monitor(x=0, y=0, width=2560, height=1440, width_mm=597, height_mm=336, name='\\\\.\\DISPLAY2', is_primary=True)
+:prc(warning): Invalid integer value for ConfigVariable win-size: 1152.0
+:prc(warning): Invalid integer value for ConfigVariable win-size: 2048.0
+Known pipe types:
+  wglGraphicsPipe
+(4 aux display modules not yet loaded.)
+set window position: Vec2(256, 144)
+:prc(warning): changing default value for ConfigVariable paste-emit-keystrokes from '1' to '0'.
+:pnmimage:png(warning): iCCP: known incorrect sRGB profile
+package_folder: C:\Users\PC\Documents\GitHub\vr-tutorial\.venv\Lib\site-packages\ursina
+asset_folder: c:\Users\PC\Documents\GitHub\vr-tutorial\vr_pimax\eye_tracking_demo
+[EyeTracker] Mode: pyopenxr worker will start after VR init.
+:prc(warning): changing type for ConfigVariable textures-power-2 from enum to string.
+Replicating left eye
+[VR] Fallback init: P3DOpenVR initialized from Python module.
+[VRController] Ready (reusing base.openvr.vr_system).
+os: Windows
+development mode: True
+application successfully started
+info: changed aspect ratio: 1.778 -> 1.778
+[EyeTracker] pyopenxr worker launched.
+:display:windisplay(warning): Could not find icon filename textures/ursina.ico
+[EyeWorker] Available extensions (16):
+  XR_EXT_debug_utils
+  XR_EXT_eye_gaze_interaction
+  XR_EXT_hand_joints_motion_range
+  XR_EXT_hand_tracking
+  XR_FB_display_refresh_rate
+  XR_KHR_D3D11_enable
+  XR_KHR_D3D12_enable
+  XR_KHR_composition_layer_depth
+  XR_KHR_opengl_enable
+  XR_KHR_visibility_mask
+  XR_KHR_vulkan_enable
+  XR_KHR_vulkan_enable2
+  XR_KHR_win32_convert_performance_counter_time
+  XR_PIMAX_custom_interface
+  XR_VARJO_foveated_rendering
+  XR_VARJO_quad_views
+[EyeWorker] Using OpenGL session binding.
+[EyeWorker] get_system_properties ext chain unavailable; proceeding.
+Exception ignored on calling ctypes callback function: <function _create_wgl_context.<locals>.<lambda> at 0x0000018DA8649440>
+Traceback (most recent call last):
+  File "c:\Users\PC\Documents\GitHub\vr-tutorial\vr_pimax\eye_tracking_demo\..\eye_tracking_demo\eye_worker.py", line 60, in <lambda>
+    _wnd_proc = WNDPROC(lambda h, m, w, l: _def(h, m, w, l))
+                                           ^^^^^^^^^^^^^^^^
+ctypes.ArgumentError: argument 4: OverflowError: int too long to convert
+Exception ignored on calling ctypes callback function: <function _create_wgl_context.<locals>.<lambda> at 0x0000018DA8649440>
+Traceback (most recent call last):
+  File "c:\Users\PC\Documents\GitHub\vr-tutorial\vr_pimax\eye_tracking_demo\..\eye_tracking_demo\eye_worker.py", line 60, in <lambda>
+    _wnd_proc = WNDPROC(lambda h, m, w, l: _def(h, m, w, l))
+                                           ^^^^^^^^^^^^^^^^
+ctypes.ArgumentError: argument 4: OverflowError: int too long to convert
+Exception ignored on calling ctypes callback function: <function _create_wgl_context.<locals>.<lambda> at 0x0000018DA8649440>
+Traceback (most recent call last):
+  File "c:\Users\PC\Documents\GitHub\vr-tutorial\vr_pimax\eye_tracking_demo\..\eye_tracking_demo\eye_worker.py", line 60, in <lambda>
+    _wnd_proc = WNDPROC(lambda h, m, w, l: _def(h, m, w, l))
+                                           ^^^^^^^^^^^^^^^^
+ctypes.ArgumentError: argument 4: OverflowError: int too long to convert
+Exception ignored on calling ctypes callback function: <function _create_wgl_context.<locals>.<lambda> at 0x0000018DA8649440>
+Traceback (most recent call last):
+  File "c:\Users\PC\Documents\GitHub\vr-tutorial\vr_pimax\eye_tracking_demo\..\eye_tracking_demo\eye_worker.py", line 60, in <lambda>
+    _wnd_proc = WNDPROC(lambda h, m, w, l: _def(h, m, w, l))
+                                           ^^^^^^^^^^^^^^^^
+ctypes.ArgumentError: argument 4: OverflowError: int too long to convert
+[EyeWorker] Unhandled error: The given graphics device is not in a valid state. The graphics device could be lost or initialized without meeting graphics requirements.
+:text(warning): No definition in  for character U+25cf
+:text(warning): No definition in  for character U+25cf
+:text(warning): No definition in  for character U+25cf
+:text(warning): No definition in  for character U+25cf
+:text(warning): No definition in  for character U+25cf
+:text(warning): No definition in  for character U+25cf
+:text(warning): No definition in  for character U+25cf
+:text(warning): No definition in  for character U+25cf
+:text(warning): No definition in  for character U+25cf
 Use analyse_calibration.py (or gaze_analysis.py) to visualise accuracy.
+PS C:\Users\PC\Documents\GitHub\vr-tutorial> & c:/Users/PC/Documents/GitHub/vr-tutorial/.venv/Scripts/python.exe c:/Users/PC/Documents/GitHub/vr-tutorial/vr_pimax/eye_tracking_demo/gaze_demo.py
+info: Using primary monitor: Monitor(x=0, y=0, width=2560, height=1440, width_mm=597, height_mm=336, name='\\\\.\\DISPLAY2', is_primary=True)
+:prc(warning): Invalid integer value for ConfigVariable win-size: 1152.0
+:prc(warning): Invalid integer value for ConfigVariable win-size: 2048.0
+Known pipe types:
+  wglGraphicsPipe
+(4 aux display modules not yet loaded.)
+set window position: Vec2(256, 144)
+:prc(warning): changing default value for ConfigVariable paste-emit-keystrokes from '1' to '0'.
+:pnmimage:png(warning): iCCP: known incorrect sRGB profile
+package_folder: C:\Users\PC\Documents\GitHub\vr-tutorial\.venv\Lib\site-packages\ursina
+asset_folder: c:\Users\PC\Documents\GitHub\vr-tutorial\vr_pimax\eye_tracking_demo
+[EyeTracker] Mode: pyopenxr worker will start after VR init.
+:pnmimage:png(warning): iCCP: known incorrect sRGB profile
+:prc(warning): changing type for ConfigVariable textures-power-2 from enum to string.
+Replicating left eye
+[VR] Fallback init: P3DOpenVR initialized from Python module.
+[VRController] Ready (reusing base.openvr.vr_system).
+os: Windows
+development mode: True
+application successfully started
+info: changed aspect ratio: 1.778 -> 1.778
+[EyeTracker] pyopenxr worker launched.
+[VRController] Found 2 controller(s): [1, 2]
+:display:windisplay(warning): Could not find icon filename textures/ursina.ico
+[EyeWorker] Available extensions (16):
+  XR_EXT_debug_utils
+  XR_EXT_eye_gaze_interaction
+  XR_EXT_hand_joints_motion_range
+  XR_EXT_hand_tracking
+  XR_FB_display_refresh_rate
+  XR_KHR_D3D11_enable
+  XR_KHR_D3D12_enable
+  XR_KHR_composition_layer_depth
+  XR_KHR_opengl_enable
+  XR_KHR_visibility_mask
+  XR_KHR_vulkan_enable
+  XR_KHR_vulkan_enable2
+  XR_KHR_win32_convert_performance_counter_time
+  XR_PIMAX_custom_interface
+  XR_VARJO_foveated_rendering
+  XR_VARJO_quad_views
+[EyeWorker] Using OpenGL session binding.
+[EyeWorker] get_system_properties ext chain unavailable; proceeding.
+Exception ignored on calling ctypes callback function: <function _create_wgl_context.<locals>.<lambda> at 0x0000025F5EF49440>
+Traceback (most recent call last):
+  File "c:\Users\PC\Documents\GitHub\vr-tutorial\vr_pimax\eye_tracking_demo\..\eye_tracking_demo\eye_worker.py", line 60, in <lambda>
+    _wnd_proc = WNDPROC(lambda h, m, w, l: _def(h, m, w, l))
+                                           ^^^^^^^^^^^^^^^^
+ctypes.ArgumentError: argument 4: OverflowError: int too long to convert
+Exception ignored on calling ctypes callback function: <function _create_wgl_context.<locals>.<lambda> at 0x0000025F5EF49440>
+Traceback (most recent call last):
+  File "c:\Users\PC\Documents\GitHub\vr-tutorial\vr_pimax\eye_tracking_demo\..\eye_tracking_demo\eye_worker.py", line 60, in <lambda>
+    _wnd_proc = WNDPROC(lambda h, m, w, l: _def(h, m, w, l))
+                                           ^^^^^^^^^^^^^^^^
+ctypes.ArgumentError: argument 4: OverflowError: int too long to convert
+Exception ignored on calling ctypes callback function: <function _create_wgl_context.<locals>.<lambda> at 0x0000025F5EF49440>
+Traceback (most recent call last):
+  File "c:\Users\PC\Documents\GitHub\vr-tutorial\vr_pimax\eye_tracking_demo\..\eye_tracking_demo\eye_worker.py", line 60, in <lambda>
+    _wnd_proc = WNDPROC(lambda h, m, w, l: _def(h, m, w, l))
+                                           ^^^^^^^^^^^^^^^^
+ctypes.ArgumentError: argument 4: OverflowError: int too long to convert
+Exception ignored on calling ctypes callback function: <function _create_wgl_context.<locals>.<lambda> at 0x0000025F5EF49440>
+Traceback (most recent call last):
+  File "c:\Users\PC\Documents\GitHub\vr-tutorial\vr_pimax\eye_tracking_demo\..\eye_tracking_demo\eye_worker.py", line 60, in <lambda>
+    _wnd_proc = WNDPROC(lambda h, m, w, l: _def(h, m, w, l))
+                                           ^^^^^^^^^^^^^^^^
+ctypes.ArgumentError: argument 4: OverflowError: int too long to convert
+[EyeWorker] Unhandled error: The given graphics device is not in a valid state. The graphics device could be lost or initialized without meeting graphics requirements.
 """
 
 import csv
