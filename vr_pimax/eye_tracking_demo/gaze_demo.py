@@ -11,7 +11,7 @@ Controls
 Output
 ------
   gaze_YYYYMMDD_HHMMSS.csv
-  Columns: time_s, gaze_x, gaze_y, gaze_z, head_x, head_y, head_z
+  Columns: time_s, gaze_x, gaze_y, gaze_z, pupil_size_mm, head_x, head_y, head_z
 
 Run gaze_analysis.py after the session to plot trajectories and heatmaps.
 """
@@ -135,7 +135,7 @@ class GazeDemo(Entity):
         self._csv_file  = open(self._filename, 'w', newline='')
         self._csv_w     = csv.writer(self._csv_file)
         self._csv_w.writerow([
-            'time_s', 'gaze_x', 'gaze_y', 'gaze_z',
+            'time_s', 'gaze_x', 'gaze_y', 'gaze_z', 'pupil_size_mm',
             'head_x', 'head_y', 'head_z',
         ])
         self._t0        = time.perf_counter()
@@ -164,11 +164,11 @@ class GazeDemo(Entity):
 
     def update(self):
         now = time.perf_counter()
-        gx, gy, gz = self.eye.sample()
+        gx, gy, gz, pupil_mm = self.eye.sample_with_pupil()
         hp = self.player.position
 
         # Always show live gaze vector in HUD
-        self.gaze_text.text = f'Gaze  {gx:+.3f}  {gy:+.3f}  {gz:+.3f}'
+        self.gaze_text.text = f'Gaze  {gx:+.3f}  {gy:+.3f}  {gz:+.3f}  Pupil {pupil_mm:.1f}mm'
 
         if self.state != 'RECORDING':
             return
@@ -179,7 +179,7 @@ class GazeDemo(Entity):
         t_s = round(now - self._t0, 4)
         self._csv_w.writerow([
             t_s,
-            round(gx, 5), round(gy, 5), round(gz, 5),
+            round(gx, 5), round(gy, 5), round(gz, 5), round(pupil_mm, 2),
             round(hp.x, 3), round(hp.y, 3), round(hp.z, 3),
         ])
         self._n_samples += 1

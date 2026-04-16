@@ -624,6 +624,32 @@ class EyeTracker:
         except Exception:
             return (0.0, 0.0, 0.0)
 
+    def sample_with_pupil(self) -> tuple[float, float, float, float]:
+        """
+        Return gaze direction (gx, gy, gz) and pupil size (diameter in mm).
+
+        Returns ``(0.0, 0.0, 0.0, 0.0)`` if the tracker is unavailable.
+
+        To integrate real pupil size from the Pimax PGEE SDK, replace this method::
+
+            def sample_with_pupil(self) -> tuple[float, float, float, float]:
+                if not self._ok:
+                    return (0.0, 0.0, 0.0, 0.0)
+                try:
+                    data = self._et.get_gaze_data()
+                    # Adjust field names based on your SDK version
+                    return (
+                        round(data.combined_gaze_x, 4),
+                        round(data.combined_gaze_y, 4),
+                        round(data.combined_gaze_z, 4),
+                        round(data.pupil_diameter, 2),  # or left_pupil, right_pupil avg
+                    )
+                except Exception:
+                    return (0.0, 0.0, 0.0, 0.0)
+        """
+        gx, gy, gz = self.sample()
+        return (gx, gy, gz, 0.0)  # pupil size not available in proxy mode
+
     @property
     def available(self) -> bool:
         """True if the tracker initialized successfully."""
