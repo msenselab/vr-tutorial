@@ -10,6 +10,34 @@ Controls
 
 Output
 ------
+PS C:\Users\PC\Documents\GitHub\vr-tutorial\vr_pimax\eye_tracking_demo> & c:/Users/PC/Documents/GitHub/vr-tutorial/.venv/Scripts/python.exe c:/Users/PC/Documents/GitHub/vr-tutorial/vr_pimax/eye_tracking_demo/gaze_demo.py
+info: Using primary monitor: Monitor(x=0, y=0, width=2560, height=1440, width_mm=597, height_mm=336, name='\\\\.\\DISPLAY2', is_primary=True)
+:prc(warning): Invalid integer value for ConfigVariable win-size: 1152.0
+:prc(warning): Invalid integer value for ConfigVariable win-size: 2048.0
+Known pipe types:
+  wglGraphicsPipe
+(4 aux display modules not yet loaded.)
+set window position: Vec2(256, 144)
+:prc(warning): changing default value for ConfigVariable paste-emit-keystrokes from '1' to '0'.
+:pnmimage:png(warning): iCCP: known incorrect sRGB profile
+package_folder: C:\Users\PC\Documents\GitHub\vr-tutorial\.venv\Lib\site-packages\ursina
+asset_folder: c:\Users\PC\Documents\GitHub\vr-tutorial\vr_pimax\eye_tracking_demo
+[EyeTracker] Mode: pyopenxr worker launched — waiting for FOCUSED state...
+[EyeTracker]   (gaze data will be live once SteamVR session is ready)
+:pnmimage:png(warning): iCCP: known incorrect sRGB profile
+[EyeWorker] XR_EXT_eye_gaze_interaction not available in this runtime.
+[EyeWorker] Make sure SteamVR is running and the headset is connected.
+:prc(warning): changing type for ConfigVariable textures-power-2 from enum to string.
+Replicating left eye
+[VR] Fallback init: P3DOpenVR initialized from Python module.
+[VRController] Ready (reusing base.openvr.vr_system).
+os: Windows
+development mode: True
+application successfully started
+info: changed aspect ratio: 1.778 -> 1.778
+[VRController] Found 2 controller(s): [1, 2]
+:display:windisplay(warning): Could not find icon filename textures/ursina.ico
+PS C:\Users\PC\Documents\GitHub\vr-tutorial\vr_pimax\eye_tracking_demo> 
   gaze_YYYYMMDD_HHMMSS.csv
   Columns: time_s, gaze_x, gaze_y, gaze_z, pupil_size_mm, head_x, head_y, head_z
 
