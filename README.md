@@ -162,4 +162,15 @@ The capstone module uses [MazeWalker-Py](https://github.com/msenselab/MazeWalker
 
 ## License
 
-MIT
+This tutorial is an Open Educational Resource.
+
+- **Code** (exercises, setup scripts): [MIT License](LICENSE)
+- **Slides, guides and documentation**: [Creative Commons Attribution 4.0 International (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/)
+
+## Funding
+
+<img src="docs/img/eu-cofunded.png" alt="Co-funded by the European Union" height="60">
+
+Developed within the EyeCon VR/AR Lab, Erasmus+ project 2025-1-DE02-KA210-VET-000357923 ([xr4vet.eu](https://xr4vet.eu/)).
+
+Funded by the European Union. Views and opinions expressed are however those of the author(s) only and do not necessarily reflect those of the European Union or the European Education and Culture Executive Agency (EACEA). Neither the European Union nor EACEA can be held responsible for them.
